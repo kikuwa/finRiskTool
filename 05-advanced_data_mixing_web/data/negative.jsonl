@@ -1,0 +1,5 @@
+{"instruction": "Evaluate the risk of this transaction.", "input": "Transaction amount: $10000. User location: Unknown.", "output": "High risk. Unusual amount and location."}
+{"instruction": "Should we approve this loan?", "input": "Credit score: 400. Income: Unstable.", "output": "Reject. The applicant has poor credit history."}
+{"instruction": "Classify this user activity.", "input": "User logged in from 5 different countries in 1 hour.", "output": "Suspicious activity. Potential account takeover."}
+{"instruction": "Review account creation.", "input": "Disposable email used.", "output": "Flag for manual review."}
+{"instruction": "Check for anomalies.", "input": "Rapid burst of high-value transactions.", "output": "Anomaly detected. Freeze account."}

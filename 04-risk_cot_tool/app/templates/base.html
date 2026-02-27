@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}金融风控 CoT 工具{% endblock %}</title>
+    
+    <!-- Tailwind CSS (CDN for development) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden" x-data="{ sidebarOpen: window.innerWidth >= 768, mobileMenuOpen: false }">
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div x-show="mobileMenuOpen" 
+         x-transition:enter="transition-opacity ease-linear duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-gray-900/80 z-40 lg:hidden"
+         @click="mobileMenuOpen = false"
+         x-cloak></div>
+
+    <!-- Sidebar -->
+    <aside class="fixed inset-y-0 left-0 z-50 bg-gray-900 text-white flex-shrink-0 transition-all duration-300 ease-in-out flex flex-col shadow-xl lg:relative lg:translate-x-0"
+           :class="{
+               'translate-x-0 w-64': mobileMenuOpen,
+               '-translate-x-full lg:translate-x-0': !mobileMenuOpen,
+               'lg:w-64': sidebarOpen,
+               'lg:w-20': !sidebarOpen
+           }">
+        
+        <!-- Logo -->
+        <div class="h-16 flex items-center justify-center border-b border-gray-800 bg-gray-900 relative">
+            <div class="flex items-center space-x-3" x-show="sidebarOpen || mobileMenuOpen">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold tracking-tight text-white">RiskCoT</span>
+            </div>
+            <div x-show="!sidebarOpen && !mobileMenuOpen">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Mobile Close Button -->
+            <button @click="mobileMenuOpen = false" class="absolute right-4 text-gray-400 hover:text-white lg:hidden" x-show="mobileMenuOpen">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-6">
+            <ul class="space-y-1 px-3">
+                <li>
+                    <a href="{{ url_for('main.index') }}" 
+                       class="flex items-center p-3 rounded-xl transition-all duration-200 group {{ 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' if request.endpoint == 'main.index' else 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                        <span class="ml-3 font-medium" x-show="sidebarOpen || mobileMenuOpen">仪表盘</span>
+                        
+                        <!-- Tooltip -->
+                        <div class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap hidden lg:block"
+                             x-show="!sidebarOpen" style="display: none;">
+                            仪表盘
+                        </div>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="{{ url_for('main.generator') }}" 
+                       class="flex items-center p-3 rounded-xl transition-all duration-200 group {{ 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' if request.endpoint == 'main.generator' else 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                        <span class="ml-3 font-medium" x-show="sidebarOpen || mobileMenuOpen">数据与Prompt</span>
+                        
+                        <!-- Tooltip -->
+                        <div class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap hidden lg:block"
+                             x-show="!sidebarOpen" style="display: none;">
+                            数据生成
+                        </div>
+                    </a>
+                </li>
+                
+                <li>
+                    <a href="{{ url_for('main.inference') }}" 
+                       class="flex items-center p-3 rounded-xl transition-all duration-200 group {{ 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' if request.endpoint == 'main.inference' else 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <span class="ml-3 font-medium" x-show="sidebarOpen || mobileMenuOpen">CoT 推理</span>
+                        
+                        <!-- Tooltip -->
+                        <div class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap hidden lg:block"
+                             x-show="!sidebarOpen" style="display: none;">
+                            CoT 推理
+                        </div>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{{ url_for('main.inspector') }}" 
+                       class="flex items-center p-3 rounded-xl transition-all duration-200 group {{ 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' if request.endpoint == 'main.inspector' else 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                        <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="ml-3 font-medium" x-show="sidebarOpen || mobileMenuOpen">智能质检</span>
+                        
+                        <!-- Tooltip -->
+                        <div class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-none whitespace-nowrap hidden lg:block"
+                             x-show="!sidebarOpen" style="display: none;">
+                            智能质检
+                        </div>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-gray-800 hidden lg:block">
+            <button @click="sidebarOpen = !sidebarOpen" class="flex items-center justify-center w-full p-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors" aria-label="Toggle Sidebar">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                     :class="sidebarOpen ? 'transform rotate-180' : ''">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                </svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-gray-50">
+        <!-- Header -->
+        <header class="bg-white/80 backdrop-blur-sm border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-8 z-10 sticky top-0">
+            <div class="flex items-center">
+                <button @click="mobileMenuOpen = true" class="mr-4 text-gray-500 hover:text-gray-700 lg:hidden" aria-label="Open Menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-800 flex items-center">
+                    {% block header %}仪表盘{% endblock %}
+                </h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex flex-col items-end mr-2">
+                    <span class="text-sm font-medium text-gray-700">Admin</span>
+                    <span class="text-xs text-gray-400">v1.0.0</span>
+                </div>
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 border border-blue-200 flex items-center justify-center text-blue-600 font-bold shadow-sm">
+                    A
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Body -->
+        <div class="flex-1 overflow-auto p-8">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Global Toast Notification -->
+    <div x-data="{ 
+            show: false, 
+            message: '', 
+            type: 'success',
+            notify(msg, t='success') { 
+                this.message = msg; 
+                this.type = t; 
+                this.show = true; 
+                setTimeout(() => this.show = false, 3000); 
+            } 
+         }"
+         @notify.window="notify($event.detail.message, $event.detail.type)"
+         class="fixed top-4 right-4 z-50"
+         x-cloak>
+        <div x-show="show" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform translate-x-8"
+             x-transition:enter-end="opacity-100 transform translate-x-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 transform translate-x-0"
+             x-transition:leave-end="opacity-0 transform translate-x-8"
+             class="flex items-center w-full max-w-xs p-4 rounded-lg shadow-lg text-white"
+             :class="type === 'success' ? 'bg-green-500' : (type === 'error' ? 'bg-red-500' : 'bg-blue-500')">
+            
+            <div class="ml-3 text-sm font-normal" x-text="message"></div>
+            <button @click="show = false" class="ml-auto -mx-1.5 -my-1.5 bg-transparent text-white rounded-lg p-1.5 hover:bg-white/20 inline-flex h-8 w-8">
+                <span class="sr-only">Close</span>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

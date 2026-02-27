@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block header %}仪表盘{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    
+    <!-- Welcome Card -->
+    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-xl text-white p-10 relative overflow-hidden">
+        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+        <div class="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-blue-400 opacity-20 rounded-full blur-2xl"></div>
+        
+        <div class="relative z-10">
+            <h2 class="text-4xl font-bold mb-4 tracking-tight">欢迎使用 RiskCoT 工具</h2>
+            <p class="text-blue-100 mb-8 max-w-2xl text-lg leading-relaxed">
+                这是一个集成了金融风控数据生成、思维链（CoT）推理以及智能质检的一站式平台。
+                <br>您可以从生成模拟数据开始，或者直接上传现有数据进行分析。
+            </p>
+            <a href="{{ url_for('main.generator') }}" class="inline-flex items-center bg-white text-blue-600 px-6 py-3 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                开始生成数据
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Module Cards -->
+    <a href="{{ url_for('main.generator') }}" class="group bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-3 group-hover:text-blue-600 transition-colors">数据与 Prompt</h3>
+        <p class="text-gray-500 leading-relaxed">生成金融风控模拟数据，支持本地导入，优化 Prompt 模板，并转换为 Alpaca 微调格式。</p>
+    </a>
+
+    <a href="{{ url_for('main.inference') }}" class="group bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-3 group-hover:text-indigo-600 transition-colors">CoT 推理</h3>
+        <p class="text-gray-500 leading-relaxed">配置并运行 DeepSeek R1 推理任务，实时监控多线程进度和日志，支持断点续传。</p>
+    </a>
+
+    <a href="{{ url_for('main.inspector') }}" class="group bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div class="w-14 h-14 bg-green-50 text-green-600 rounded-xl flex items-center justify-center mb-6 group-hover:bg-green-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-3 group-hover:text-green-600 transition-colors">智能质检</h3>
+        <p class="text-gray-500 leading-relaxed">基于规则和模型的双重质检机制，自动化评估语料质量，可视化展示评分结果。</p>
+    </a>
+
+    <!-- Stats Section (Static for now, could be dynamic) -->
+    <div class="col-span-1 md:col-span-2 lg:col-span-3 bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">系统状态</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="text-gray-500 text-sm mb-1">服务状态</div>
+                <div class="text-green-600 font-bold flex items-center">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    运行中
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="text-gray-500 text-sm mb-1">当前版本</div>
+                <div class="text-gray-800 font-bold">v1.0.0</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="text-gray-500 text-sm mb-1">支持模型</div>
+                <div class="text-gray-800 font-bold">DeepSeek R1</div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="text-gray-500 text-sm mb-1">环境</div>
+                <div class="text-gray-800 font-bold">Development</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

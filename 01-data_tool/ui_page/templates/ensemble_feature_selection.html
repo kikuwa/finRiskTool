@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html class="light" lang="zh-CN">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>集成学习特征选择 - DataCore</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&amp;family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#193ce6",
+                        "bg-light": "#f8fafc",
+                        "surface": "#ffffff",
+                        "border-light": "#e2e8f0"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "Noto Sans SC", "sans-serif"],
+                        "sans": ["Noto Sans SC", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-[#f8fafc] text-slate-800 antialiased;
+                font-family: 'Noto Sans SC', 'Space Grotesk', sans-serif;
+            }
+        }
+        .tech-gradient {
+            background: radial-gradient(circle at 50% -20%, #eff6ff 0%, #f8fafc 100%);
+        }
+        .data-grid-bg {
+            background-image: radial-gradient(#193ce6 0.5px, transparent 0.5px);
+            background-size: 32px 32px;
+            opacity: 0.05;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
+        }
+        .glass-card:hover {
+            box-shadow: 0 20px 40px -10px rgba(25, 60, 230, 0.08);
+            transform: translateY(-4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col tech-gradient">
+    <div class="fixed inset-0 pointer-events-none data-grid-bg"></div>
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-blue-50/50 to-transparent pointer-events-none"></div>
+    
+    <header class="relative z-10 border-b border-slate-200/60 bg-white/60 backdrop-blur-md">
+        <div class="max-w-[1200px] mx-auto flex items-center justify-between px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="size-8 text-primary">
+                    <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <path clip-rule="evenodd" d="M47.2426 24L24 47.2426L0.757355 24L24 0.757355L47.2426 24ZM12.2426 21H35.7574L24 9.24264L12.2426 21Z" fill="currentColor" fill-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold tracking-tight text-slate-900">DataCore <span class="text-primary">数据门户</span></h2>
+            </div>
+            <div class="flex items-center gap-6">
+                <nav class="hidden md:flex items-center gap-6">
+                    <a href="/" class="text-sm font-medium text-slate-600 hover:text-primary transition-colors">首页</a>
+                    <button class="text-sm font-medium text-slate-600 hover:text-primary transition-colors">使用文档</button>
+                    <button class="text-sm font-medium text-slate-600 hover:text-primary transition-colors">系统公告</button>
+                </nav>
+                <div class="flex items-center gap-2 border-l border-slate-200 pl-6 ml-2">
+                    <button class="p-2 rounded-full hover:bg-slate-100 transition-colors relative">
+                        <span class="material-symbols-outlined text-[20px] text-slate-600">notifications</span>
+                        <span class="absolute top-2 right-2 size-2 bg-primary rounded-full border-2 border-white"></span>
+                    </button>
+                    <button class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                        <span class="material-symbols-outlined text-[20px] text-slate-600">settings</span>
+                    </button>
+                    <div class="size-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden ml-2 ring-2 ring-white shadow-sm">
+                        <img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANlXfGGXOtQVtRROQCyRJlF8qrQurfAWvzVN_f7bfsxIGuPt1p2IL6veqgpnmZLcB2erWBzw1mDF_Xn4FmJmipGZxzkc5gNkG21RlQnGEoFgXTrWMF3uKTXUBSCjfrJDOnVdn-9UIA5xIKjdiKqmT-KkQhm-NsW5MttmZAS7B4n09zhEouSHt12QRo1ehl2VC-YDZwgkik06N_5ZRQRI6rximqLZIPKpmq5cg7dJO55fm-jwnDK2PgACvkbViFymssg-pl6GhmuFIB"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10 flex-1 px-6 py-16">
+        <div class="max-w-[1200px] mx-auto">
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-primary text-xs font-bold tracking-widest mb-6 shadow-sm">
+                    <span class="material-symbols-outlined text-[14px]">verified</span> AutoML 特征筛选
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold mb-6 tracking-tight text-slate-900 leading-tight">
+                    集成学习特征选择算法
+                </h1>
+                <p class="text-slate-500 text-lg leading-relaxed max-w-2xl mx-auto">
+                    基于MI、XGBoost和Random Forest的集成特征选择方法，自动筛选出对模型效能贡献最大的关键变量
+                </p>
+            </div>
+
+            <!-- 文件上传区域 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+                <!-- 训练集文件上传 -->
+                <div class="bg-white rounded-2xl p-8 shadow-sm glass-card">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined text-[24px]">upload_file</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900">上传训练集文件</h3>
+                            <p class="text-slate-500 text-sm">支持CSV格式，包含特征和标签列</p>
+                        </div>
+                    </div>
+                    <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-primary transition-colors">
+                        <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block">description</span>
+                        <p class="text-slate-500 mb-4">拖拽文件到此处或点击选择文件</p>
+                        <label class="inline-flex items-center gap-2 bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all transform active:scale-95 cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">cloud_upload</span> 选择文件
+                            <input type="file" id="trainFile" accept=".csv" class="hidden"/>
+                        </label>
+                        <div id="trainFileStatus" class="mt-4 text-sm text-slate-500"></div>
+                    </div>
+                </div>
+
+                <!-- PU打分文件上传 -->
+                <div class="bg-white rounded-2xl p-8 shadow-sm glass-card">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-primary">
+                            <span class="material-symbols-outlined text-[24px]">assessment</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-900">上传PU打分文件</h3>
+                            <p class="text-slate-500 text-sm">支持CSV格式，包含违约风险概率列</p>
+                        </div>
+                    </div>
+                    <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-primary transition-colors">
+                        <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block">analytics</span>
+                        <p class="text-slate-500 mb-4">拖拽文件到此处或点击选择文件</p>
+                        <label class="inline-flex items-center gap-2 bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all transform active:scale-95 cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">cloud_upload</span> 选择文件
+                            <input type="file" id="puFile" accept=".csv" class="hidden"/>
+                        </label>
+                        <div id="puFileStatus" class="mt-4 text-sm text-slate-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 运行按钮和日志区域 -->
+            <div class="bg-white rounded-2xl p-8 shadow-sm glass-card mb-16">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">开始特征筛选</h3>
+                        <p class="text-slate-500 text-sm">点击下方按钮开始运行集成特征选择算法</p>
+                    </div>
+                    <button id="runBtn" class="flex items-center gap-2 bg-primary hover:bg-blue-700 text-white px-8 py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all transform active:scale-95">
+                        <span class="material-symbols-outlined text-[20px]">play_arrow</span> 开始运行
+                    </button>
+                </div>
+
+                <!-- 日志显示区域 -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                        <h4 class="text-sm font-semibold text-slate-700">运行日志</h4>
+                        <button id="clearLog" class="text-xs text-slate-500 hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">delete</span> 清空
+                        </button>
+                    </div>
+                    <div id="logContainer" class="p-4 h-64 overflow-y-auto text-sm font-mono bg-slate-50 text-slate-700 whitespace-pre-wrap">
+                        <!-- 日志信息将显示在这里 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 结果展示区域 -->
+            <div class="bg-white rounded-2xl p-8 shadow-sm glass-card">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">特征选择结果</h3>
+                        <p class="text-slate-500 text-sm">按平均排名排序的特征列表</p>
+                    </div>
+                    <a id="downloadBtn" href="/download_results" class="flex items-center gap-2 bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all transform active:scale-95 opacity-50 cursor-not-allowed" disabled>
+                        <span class="material-symbols-outlined text-[18px]">download</span> 下载结果
+                    </a>
+                </div>
+
+                <!-- 结果表格 -->
+                <div class="overflow-x-auto">
+                    <table id="resultsTable" class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 bg-slate-50">
+                                <th class="px-6 py-3 text-sm font-semibold text-slate-700">排名</th>
+                                <th class="px-6 py-3 text-sm font-semibold text-slate-700">特征名称（中文）</th>
+                                <th class="px-6 py-3 text-sm font-semibold text-slate-700">特征名称（英文）</th>
+                                <th class="px-6 py-3 text-sm font-semibold text-slate-700">训练集1_排名</th>
+                                <th class="px-6 py-3 text-sm font-semibold text-slate-700">训练集2_排名</th>
+                                <th class="px-6 py-3 text-sm font-semibold text-slate-700">训练集3_排名</th>
+                                <th class="px-6 py-3 text-sm font-semibold text-slate-700">平均排名</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                            <!-- 结果数据将显示在这里 -->
+                            <tr>
+                                <td colspan="7" class="px-6 py-12 text-center text-slate-400">
+                                    <span class="material-symbols-outlined text-[48px] block mx-auto mb-4">pending</span>
+                                    <p>运行特征选择算法后将显示结果</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="fixed bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/10 to-transparent"></div>
+
+    <script>
+        // 文件上传处理
+        const trainFileInput = document.getElementById('trainFile');
+        const puFileInput = document.getElementById('puFile');
+        const trainFileStatus = document.getElementById('trainFileStatus');
+        const puFileStatus = document.getElementById('puFileStatus');
+        const runBtn = document.getElementById('runBtn');
+        const logContainer = document.getElementById('logContainer');
+        const clearLog = document.getElementById('clearLog');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultsBody = document.getElementById('resultsBody');
+
+        // 训练集文件上传
+        trainFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    trainFileStatus.textContent = '正在上传...';
+                    const response = await fetch('/upload_train', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        trainFileStatus.textContent = result.success;
+                        trainFileStatus.className = 'mt-4 text-sm text-green-600';
+                    } else {
+                        trainFileStatus.textContent = result.error;
+                        trainFileStatus.className = 'mt-4 text-sm text-red-600';
+                    }
+                } catch (error) {
+                    trainFileStatus.textContent = '上传失败: ' + error.message;
+                    trainFileStatus.className = 'mt-4 text-sm text-red-600';
+                }
+            }
+        });
+
+        // PU打分文件上传
+        puFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    puFileStatus.textContent = '正在上传...';
+                    const response = await fetch('/upload_pu', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        puFileStatus.textContent = result.success;
+                        puFileStatus.className = 'mt-4 text-sm text-green-600';
+                    } else {
+                        puFileStatus.textContent = result.error;
+                        puFileStatus.className = 'mt-4 text-sm text-red-600';
+                    }
+                } catch (error) {
+                    puFileStatus.textContent = '上传失败: ' + error.message;
+                    puFileStatus.className = 'mt-4 text-sm text-red-600';
+                }
+            }
+        });
+
+        // 运行模型
+        runBtn.addEventListener('click', async () => {
+            runBtn.disabled = true;
+            runBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            runBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">hourglass_empty</span> 运行中...';
+            
+            logContainer.textContent += '开始运行集成特征选择算法...\n';
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            try {
+                const response = await fetch('/run_model_feature_selection', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.stdout) {
+                    logContainer.textContent += result.stdout + '\n';
+                }
+                if (result.stderr) {
+                    logContainer.textContent += '错误: ' + result.stderr + '\n';
+                }
+                
+                if (result.success) {
+                    logContainer.textContent += '\n=== 特征选择完成 ===\n';
+                    downloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    downloadBtn.removeAttribute('disabled');
+                    
+                    // 加载结果数据
+                    loadResultsData();
+                } else {
+                    logContainer.textContent += '\n=== 运行失败 ===\n';
+                    if (result.error) {
+                        logContainer.textContent += '错误原因: ' + result.error + '\n';
+                    }
+                }
+            } catch (error) {
+                logContainer.textContent += '\n=== 运行出错 ===\n';
+                logContainer.textContent += '错误: ' + error.message + '\n';
+            } finally {
+                runBtn.disabled = false;
+                runBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                runBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">play_arrow</span> 开始运行';
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        });
+
+        // 清空日志
+        clearLog.addEventListener('click', () => {
+            logContainer.textContent = '';
+        });
+
+        // 加载结果数据
+        async function loadResultsData() {
+            try {
+                const response = await fetch('/get_results_data');
+                const data = await response.json();
+                
+                if (data.error) {
+                    logContainer.textContent += '加载结果数据失败: ' + data.error + '\n';
+                    return;
+                }
+                
+                // 清空表格
+                resultsBody.innerHTML = '';
+                
+                // 添加数据行
+                data.forEach((row, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 text-sm font-medium text-slate-700">${index + 1}</td>
+                        <td class="px-6 py-4 text-sm text-slate-900">${row['特征名称（中文）']}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500 font-mono">${row['特征名称（英文）']}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">${row['训练集1_高置信负转正_排名'] || '-'}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">${row['训练集2_伪正样本补充_排名'] || '-'}</td>
+                        <td class="px-6 py-4 text-sm text-slate-700">${row['训练集3_原始数据_排名'] || '-'}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-primary">${row['平均排名'].toFixed(2)}</td>
+                    `;
+                    resultsBody.appendChild(tr);
+                });
+            } catch (error) {
+                logContainer.textContent += '加载结果数据失败: ' + error.message + '\n';
+            }
+        }
+    </script>
+</body>
+</html>

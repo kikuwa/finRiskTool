@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AutoML特征筛选中心 - 浅色版</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Noto+Sans+SC:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2563eb",
+                        "primary-hover": "#1d4ed8",
+                        "tech-blue": "#0ea5e9",
+                        "surface": "#ffffff",
+                        "background": "#f8fafc",
+                        "border-color": "#e2e8f0",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "Noto Sans SC", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: theme('colors.background');
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<header class="flex items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur-md px-8 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-10">
+<div class="flex items-center gap-2 text-primary">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">insights</span>
+</div>
+<h2 class="text-slate-900 text-lg font-bold tracking-tight">AutoML <span class="text-primary">Feature Hub</span></h2>
+</div>
+<nav class="flex items-center gap-8">
+<a class="text-slate-500 hover:text-primary text-sm font-semibold transition-colors" href="#">总览看板</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary py-4 -mb-4" href="#">特征筛选</a>
+<a class="text-slate-500 hover:text-primary text-sm font-semibold transition-colors" href="#">模型训练</a>
+<a class="text-slate-500 hover:text-primary text-sm font-semibold transition-colors" href="#">部署监控</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-primary/20 placeholder:text-slate-400" placeholder="搜索特征或策略..." type="text"/>
+</div>
+<button class="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-full transition-all shadow-md shadow-primary/10">
+<span class="material-symbols-outlined text-sm">play_arrow</span>
+<span>执行分析</span>
+</button>
+<div class="size-9 rounded-full border-2 border-slate-100 bg-cover bg-center shadow-sm" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBqxyW_QfhIFb1l2R9-XKIpHqxXxbi5e_Xja0T4hoAyuA3LzxvhFhYuVemn1rYCmdQJAhWmdyRPZSSO01XGG2hch8b1RYuMrUIHG6EZh2OFmpDV40u_W1zZTq6b6cLB0nSl8NrMgDYxsqI0JcknxskHBIjnbTCupFGXlG9XnMhgv-5ADPdGyR2iCBBSGMkkW2yWflr9373hbzaEEyycf5a5Hm2StDxl_uQZaxe6sB1AiDld8wKCqPvZzRm7Ikn2o7SYuOPYZ0otzc0a")'></div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full px-8 py-8 space-y-8">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
+<span class="material-symbols-outlined text-base">auto_awesome</span>
+                    Automated Intelligence
+                </div>
+<h1 class="text-4xl font-extrabold tracking-tight text-slate-900">AutoML特征筛选中心</h1>
+<p class="text-slate-500 text-base max-w-2xl font-medium">采用工业级评估算法，针对大规模数据集进行自动化特征重要性排序与高维冗余剔除。</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 transition-all text-sm font-bold rounded-xl shadow-sm text-slate-700">
+<span class="material-symbols-outlined text-lg">save</span>
+<span>保存配置</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 transition-all text-sm font-bold rounded-xl shadow-sm text-slate-700">
+<span class="material-symbols-outlined text-lg">tune</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-8">
+<div class="col-span-12 lg:col-span-4 space-y-8">
+<div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm shadow-slate-100 overflow-hidden relative">
+<div class="absolute top-0 right-0 p-4">
+<span class="px-2.5 py-1 rounded-md text-[10px] bg-emerald-50 text-emerald-600 font-bold border border-emerald-100 uppercase tracking-tighter">就绪</span>
+</div>
+<h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">database</span>
+                        最优数据输入
+                    </h3>
+<div class="group relative flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-primary hover:bg-blue-50/30 transition-all rounded-2xl py-12 px-6 cursor-pointer">
+<div class="size-16 rounded-2xl bg-primary/5 text-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">cloud_upload</span>
+</div>
+<p class="text-slate-800 font-bold text-center">上传数据集</p>
+<p class="text-slate-400 text-xs text-center mt-2 font-medium">支持 CSV, Parquet, Feather (Max 2GB)</p>
+<button class="mt-8 px-6 py-2 bg-slate-900 text-white text-xs font-bold rounded-full hover:bg-black transition-colors">浏览本地文件</button>
+</div>
+</div>
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm shadow-slate-100 flex flex-col h-[460px]">
+<div class="p-5 border-b border-slate-100 flex items-center justify-between">
+<h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">terminal</span>
+                            执行日志
+                        </h3>
+<div class="flex items-center gap-3">
+<span class="text-[10px] font-bold text-primary animate-pulse uppercase tracking-wider">进行中</span>
+<div class="flex gap-1">
+<span class="size-1.5 rounded-full bg-primary"></span>
+<span class="size-1.5 rounded-full bg-slate-200"></span>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-5 space-y-4 font-mono text-[11px] leading-relaxed custom-scrollbar">
+<div class="flex gap-4">
+<span class="text-slate-300 font-medium">10:20:01</span>
+<div class="flex-1">
+<span class="text-emerald-500 font-bold mr-2">[INFO]</span>
+<span class="text-slate-600">加载数据集 'fin_risk_v4.parquet' ... 1.2M 行记录</span>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-300 font-medium">10:20:05</span>
+<div class="flex-1">
+<span class="text-primary font-bold mr-2">[EXEC]</span>
+<span class="text-slate-600">初始化 Pearson 相关性矩阵分析</span>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-300 font-medium">10:20:12</span>
+<div class="flex-1">
+<span class="text-primary font-bold mr-2">[EXEC]</span>
+<span class="text-slate-600">正在计算 156 个特征的 IV (Information Value)</span>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-300 font-medium">10:21:03</span>
+<div class="flex-1">
+<span class="text-amber-500 font-bold mr-2">[WARN]</span>
+<span class="text-slate-600">特征 'raw_user_id' 基数过高，已自动剔除</span>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="text-slate-300 font-medium">10:21:15</span>
+<div class="flex-1">
+<span class="text-primary font-bold mr-2">[EXEC]</span>
+<span class="text-slate-600">训练随机森林评估器 (n_estimators=1000)</span>
+</div>
+</div>
+<div class="flex gap-4 border-l-2 border-primary/20 pl-3">
+<span class="text-slate-300 font-medium">10:22:00</span>
+<div class="flex-1">
+<span class="text-primary font-bold mr-2">[EXEC]</span>
+<span class="text-slate-900 font-semibold">正在计算 SHAP 全局特征贡献度...</span>
+</div>
+</div>
+</div>
+<div class="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+<div class="w-full">
+<div class="flex justify-between text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-tight">
+<span>任务进度 (SHAP Analysis)</span>
+<span>82%</span>
+</div>
+<div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 82%;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-8 space-y-8">
+<div class="bg-white rounded-2xl border border-slate-200 p-1.5 shadow-sm shadow-slate-100 flex flex-wrap sm:flex-nowrap gap-1">
+<button class="flex-1 py-3 px-5 rounded-xl bg-primary text-white font-bold text-sm shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">bar_chart</span>
+                        IV 信息值
+                    </button>
+<button class="flex-1 py-3 px-5 rounded-xl text-slate-500 hover:text-primary hover:bg-slate-50 transition-all font-bold text-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">forest</span>
+                        随机森林
+                    </button>
+<button class="flex-1 py-3 px-5 rounded-xl text-slate-500 hover:text-primary hover:bg-slate-50 transition-all font-bold text-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">scatter_plot</span>
+                        SHAP 解释
+                    </button>
+<button class="flex-1 py-3 px-5 rounded-xl text-slate-500 hover:text-primary hover:bg-slate-50 transition-all font-bold text-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">link</span>
+                        Pearson 相关性
+                    </button>
+</div>
+<div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm shadow-slate-100">
+<div class="flex flex-wrap items-center justify-between mb-10 gap-4">
+<div>
+<h2 class="text-xl font-extrabold text-slate-900 tracking-tight">特征显著性评估</h2>
+<p class="text-xs text-slate-500 font-medium mt-1">计算策略: <span class="text-primary">Information Value</span> • 预测目标: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-primary font-mono">is_default</code></p>
+</div>
+<div class="flex items-center gap-4">
+<select class="text-xs font-bold bg-slate-50 border-slate-200 rounded-lg focus:ring-primary/20 focus:border-primary px-3 py-1.5 text-slate-600">
+<option>Top 15 特征</option>
+<option>Top 30 特征</option>
+<option>所有特征</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-6">
+<div class="space-y-6">
+<div class="group">
+<div class="flex justify-between items-center text-xs font-bold mb-2">
+<span class="text-slate-700">user_income_30d</span>
+<span class="text-primary font-mono">0.892 <span class="text-slate-300 ml-1 font-normal">Highly Significant</span></span>
+</div>
+<div class="relative w-full h-4 bg-slate-100 rounded-full overflow-hidden">
+<div class="absolute h-full bg-gradient-to-r from-primary to-tech-blue rounded-full transition-all duration-700" style="width: 89%;"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center text-xs font-bold mb-2">
+<span class="text-slate-700">last_credit_score</span>
+<span class="text-primary font-mono">0.745 <span class="text-slate-300 ml-1 font-normal">Strong</span></span>
+</div>
+<div class="relative w-full h-4 bg-slate-100 rounded-full overflow-hidden">
+<div class="absolute h-full bg-gradient-to-r from-primary to-tech-blue rounded-full transition-all duration-700" style="width: 74%;"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center text-xs font-bold mb-2">
+<span class="text-slate-700">device_fingerprint_match</span>
+<span class="text-primary font-mono">0.681 <span class="text-slate-300 ml-1 font-normal">Strong</span></span>
+</div>
+<div class="relative w-full h-4 bg-slate-100 rounded-full overflow-hidden">
+<div class="absolute h-full bg-gradient-to-r from-primary to-tech-blue rounded-full transition-all duration-700 opacity-80" style="width: 68%;"></div>
+</div>
+</div>
+<div class="group">
+<div class="flex justify-between items-center text-xs font-bold mb-2">
+<span class="text-slate-700">geo_location_stability</span>
+<span class="text-primary font-mono">0.412 <span class="text-slate-300 ml-1 font-normal">Medium</span></span>
+</div>
+<div class="relative w-full h-4 bg-slate-100 rounded-full overflow-hidden">
+<div class="absolute h-full bg-gradient-to-r from-primary to-tech-blue rounded-full transition-all duration-700 opacity-60" style="width: 41%;"></div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-8 mt-6 pt-8 border-t border-slate-100">
+<div class="text-center">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">显著特征</p>
+<p class="text-3xl font-black text-slate-900 mt-2">18</p>
+</div>
+<div class="text-center border-x border-slate-100">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">分析总数</p>
+<p class="text-3xl font-black text-slate-900 mt-2">156</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">建议剔除</p>
+<p class="text-3xl font-black text-rose-500 mt-2">29</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm shadow-slate-100">
+<div class="px-6 py-5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+<h3 class="text-sm font-bold text-slate-700">特征明细清单</h3>
+<div class="flex items-center gap-2">
+<button class="p-1.5 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-400">
+<span class="material-symbols-outlined text-xl">download</span>
+</button>
+<button class="p-1.5 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-400">
+<span class="material-symbols-outlined text-xl">refresh</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead>
+<tr class="text-slate-400 border-b border-slate-100">
+<th class="py-4 px-6 font-bold uppercase tracking-tighter text-[11px]">特征名称</th>
+<th class="py-4 px-6 font-bold uppercase tracking-tighter text-[11px]">数据类型</th>
+<th class="py-4 px-6 font-bold uppercase tracking-tighter text-[11px]">IV 数值</th>
+<th class="py-4 px-6 font-bold uppercase tracking-tighter text-[11px]">预测力评估</th>
+<th class="py-4 px-6 font-bold uppercase tracking-tighter text-[11px] text-right">入模操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-50">
+<tr class="hover:bg-blue-50/30 transition-colors group">
+<td class="py-4 px-6 font-bold text-slate-900">amt_log_norm_1</td>
+<td class="py-4 px-6 text-slate-500 font-medium text-xs">连续型数值</td>
+<td class="py-4 px-6 text-primary font-black font-mono">0.892</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold border border-emerald-100">极高贡献</span>
+</td>
+<td class="py-4 px-6 text-right">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-primary/20 size-4 cursor-pointer" type="checkbox"/>
+</td>
+</tr>
+<tr class="hover:bg-blue-50/30 transition-colors group">
+<td class="py-4 px-6 font-bold text-slate-900">user_age_weighted</td>
+<td class="py-4 px-6 text-slate-500 font-medium text-xs">连续型数值</td>
+<td class="py-4 px-6 text-primary font-black font-mono">0.458</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-primary text-[10px] font-bold border border-blue-100">显著贡献</span>
+</td>
+<td class="py-4 px-6 text-right">
+<input checked="" class="rounded border-slate-300 text-primary focus:ring-primary/20 size-4 cursor-pointer" type="checkbox"/>
+</td>
+</tr>
+<tr class="hover:bg-blue-50/30 transition-colors group">
+<td class="py-4 px-6 font-bold text-slate-900">cat_industry_type</td>
+<td class="py-4 px-6 text-slate-500 font-medium text-xs">类别型数值</td>
+<td class="py-4 px-6 text-primary font-black font-mono">0.105</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-500 text-[10px] font-bold border border-slate-200">中等贡献</span>
+</td>
+<td class="py-4 px-6 text-right">
+<input class="rounded border-slate-300 text-primary focus:ring-primary/20 size-4 cursor-pointer" type="checkbox"/>
+</td>
+</tr>
+<tr class="hover:bg-blue-50/30 transition-colors group">
+<td class="py-4 px-6 font-bold text-slate-900">redundant_count_k</td>
+<td class="py-4 px-6 text-slate-500 font-medium text-xs">离散型数值</td>
+<td class="py-4 px-6 text-primary font-black font-mono">0.012</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-500 text-[10px] font-bold border border-rose-100">无效/剔除</span>
+</td>
+<td class="py-4 px-6 text-right">
+<input class="rounded border-slate-300 text-primary focus:ring-primary/20 size-4 cursor-pointer" type="checkbox"/>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-5 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400">
+<span class="uppercase tracking-tight">显示 1-10 / 共 156 个特征</span>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">上一页</button>
+<button class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all">下一页</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<div class="fixed bottom-10 right-10 z-40">
+<button class="flex items-center gap-3 bg-slate-900 hover:bg-black text-white px-8 py-5 rounded-2xl shadow-2xl shadow-slate-900/20 transform hover:-translate-y-1 transition-all group">
+<div class="size-6 bg-primary rounded-md flex items-center justify-center group-hover:rotate-12 transition-transform">
+<span class="material-symbols-outlined text-sm">auto_fix_high</span>
+</div>
+<span class="font-bold tracking-tight">AI 自动化筛选推荐策略</span>
+<span class="bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold tracking-widest">ENABLED</span>
+</button>
+</div>
+</div>
+
+</body></html>
