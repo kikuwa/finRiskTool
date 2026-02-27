@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}思维链 (CoT) 推理 - 金融风控AI系统{% endblock %}
+
+{% block header %}
+<div class="flex items-center gap-4 w-full">
+    <h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+    <span>大模型风控</span>
+    <span class="text-slate-700">/</span>
+    <span class="text-slate-500 uppercase tracking-wider">Reasoning</span>
+    </h2>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto w-full space-y-6" x-data="inferenceApp()">
+    
+    <!-- Top Control Bar -->
+    <div class="relative bg-white rounded-2xl p-8 shadow-sm border border-slate-200 overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-bl-full -mr-10 -mt-10 pointer-events-none"></div>
+        
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-bold tracking-widest mb-4">
+                    <span class="material-symbols-outlined text-[14px]">lightbulb</span> COT REASONING
+                </div>
+                <h1 class="text-3xl font-bold text-slate-900 mb-4">思维链 (CoT) 推理</h1>
+                <p class="text-slate-500 max-w-2xl leading-relaxed text-sm">
+                    利用大模型（如 DeepSeek-R1）的思维链推理能力，对风控样本进行深度分析。
+                    通过多步推理过程，挖掘数据背后的隐性风险特征，生成高质量的推理轨迹数据。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-320px)] min-h-[800px]">
+        
+        <!-- Left Column: Config -->
+        <div class="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full overflow-y-auto custom-scrollbar">
+            <h2 class="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <span class="size-6 rounded-md bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs shadow-sm">1</span>
+                推理任务配置
+            </h2>
+            
+            <div class="space-y-5 flex-1">
+                <div x-data="{ isDragging: false }">
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">输入文件 (JSONL)</label>
+                    
+                    <!-- Upload Area -->
+                    <div class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-emerald-500 hover:bg-emerald-50/30 transition-all cursor-pointer group mb-4"
+                         :class="{'border-emerald-500 bg-emerald-50/30': isDragging}"
+                         @dragover.prevent="isDragging = true"
+                         @dragleave.prevent="isDragging = false"
+                         @drop.prevent="isDragging = false; handleFileDrop($event)"
+                         @click="$refs.fileInput.click()">
+                         
+                        <input type="file" x-ref="fileInput" class="hidden" accept=".jsonl,.json" @change="handleFileSelect">
+                        
+                        <div class="size-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-[20px]">upload_file</span>
+                        </div>
+                        <p class="text-sm font-bold text-slate-700">点击上传或拖拽文件</p>
+                        <p class="mt-1 text-xs text-slate-400">支持 .jsonl, .json 格式</p>
+                    </div>
+
+                    <!-- Manual Input Fallback -->
+                    <div class="flex space-x-2">
+                        <input type="text" x-model="inputFile" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none text-xs font-mono text-slate-600" placeholder="或手动输入文件名...">
+                        <button @click="loadLastFile" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 whitespace-nowrap px-2 py-1 hover:bg-emerald-50 rounded transition">加载上次</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">API Key</label>
+                        <input type="password" x-model="apiKey" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm font-mono text-slate-700 placeholder-slate-400">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">API Base URL</label>
+                        <input type="text" x-model="apiBase" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm font-mono text-slate-700 placeholder-slate-400" placeholder="https://api.deepseek.com/chat/completions">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">模型名称</label>
+                            <input type="text" x-model="modelName" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm font-mono text-slate-700" placeholder="deepseek-reasoner">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">并发线程</label>
+                            <input type="number" x-model="workers" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-sm font-mono text-slate-700" min="1" max="20">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-6 border-t border-slate-100">
+                <template x-if="status.status !== 'running'">
+                    <button @click="startInference" 
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 transform active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+                        开始推理任务
+                    </button>
+                </template>
+                <template x-if="status.status === 'running'">
+                    <button @click="stopInference" 
+                            class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2 transform active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-[20px]">stop</span>
+                        停止任务
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- Right Column: Status & Logs -->
+        <div class="lg:col-span-8 flex flex-col space-y-6 h-full min-h-0">
+            
+            <!-- Status Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 flex-none">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">任务状态</div>
+                    <div class="text-lg font-bold capitalize flex items-center">
+                        <span class="size-2.5 rounded-full mr-2"
+                              :class="{
+                                  'bg-slate-300': status.status === 'idle',
+                                  'bg-blue-500 animate-pulse': status.status === 'running',
+                                  'bg-green-500': status.status === 'completed',
+                                  'bg-red-500': status.status === 'error',
+                                  'bg-yellow-500': status.status === 'stopped'
+                              }"></span>
+                        <span x-text="status.status" class="text-slate-800"></span>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">处理进度</div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-2xl font-black text-slate-800" x-text="status.processed">0</span>
+                        <span class="text-sm font-medium text-slate-400">/ <span x-text="status.total > 0 ? status.total : '-'">-</span></span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1 mt-2 overflow-hidden">
+                        <div class="bg-emerald-500 h-full transition-all duration-500" :style="`width: ${status.total > 0 ? (status.processed / status.total) * 100 : 0}%`"></div>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">输出文件</div>
+                    <div class="flex items-center gap-2 text-slate-700 font-mono text-xs truncate" title="查看日志获取完整路径">
+                        <span class="material-symbols-outlined text-[16px] text-slate-400">description</span>
+                        <span x-text="status.output_file ? status.output_file.split('/').pop() : '等待生成...'" class="truncate"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Console -->
+            <div class="flex-1 bg-slate-900 rounded-2xl shadow-lg border border-slate-800 p-0 flex flex-col overflow-hidden min-h-0">
+                <div class="flex justify-between items-center px-4 py-3 border-b border-slate-800 bg-slate-950/50">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-slate-500 text-[16px]">terminal</span>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">System Logs</span>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate-600" x-text="new Date().toLocaleTimeString()"></span>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 space-y-1 font-mono text-xs custom-scrollbar" id="log-container">
+                    <template x-for="(log, idx) in logs" :key="idx">
+                        <div class="flex gap-2 group hover:bg-white/5 p-0.5 rounded transition-colors">
+                            <span class="text-slate-600 shrink-0 select-none w-16" x-text="log.split(' ')[0]"></span>
+                            <span class="break-all" 
+                                  :class="log.toLowerCase().includes('error') ? 'text-red-400' : (log.toLowerCase().includes('success') ? 'text-emerald-400' : 'text-slate-300')" 
+                                  x-text="log.substring(log.indexOf(' ') + 1)"></span>
+                        </div>
+                    </template>
+                    <template x-if="logs.length === 0">
+                        <div class="flex flex-col items-center justify-center h-full text-slate-700">
+                            <span class="material-symbols-outlined text-[32px] opacity-20 mb-2">pending</span>
+                            <p class="italic">等待任务启动...</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function inferenceApp() {
+        return {
+            inputFile: '',
+            apiKey: '',
+            apiBase: 'https://api.deepseek.com/chat/completions',
+            modelName: 'deepseek-reasoner',
+            workers: 5,
+            
+            status: { status: 'idle', processed: 0, total: 0 },
+            logs: [],
+            eventSource: null,
+
+            init() {
+                this.loadLastFile();
+                this.connectStream();
+            },
+
+            loadLastFile() {
+                const last = localStorage.getItem('last_alpaca_file');
+                if (last) this.inputFile = last;
+            },
+
+            async handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (file) await this.uploadFile(file);
+            },
+
+            async handleFileDrop(e) {
+                const file = e.dataTransfer.files[0];
+                if (file) await this.uploadFile(file);
+            },
+
+            async uploadFile(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                this.addLog('正在上传文件...');
+                
+                try {
+                    const res = await fetch('/api/inference/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    
+                    if (data.status === 'success') {
+                        this.inputFile = data.filename;
+                        this.addLog(`文件上传成功: ${data.filename}`);
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '文件上传成功' } }));
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (e) {
+                    this.addLog(`上传失败: ${e.message}`);
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message, type: 'error' } }));
+                }
+            },
+
+            connectStream() {
+                if (this.eventSource) this.eventSource.close();
+                
+                this.eventSource = new EventSource('/api/inference/status');
+                this.eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    this.status = data;
+                    
+                    if (data.status === 'running') {
+                         // Maybe update log less frequently or simulate logs based on progress
+                    }
+                    
+                    if (data.error) {
+                        this.addLog(`Error: ${data.error}`);
+                    }
+                    
+                    if (data.status === 'completed' && this.status.status !== 'completed') {
+                         this.addLog('任务完成！');
+                    }
+                };
+            },
+
+            addLog(msg) {
+                this.logs.push(`${new Date().toLocaleTimeString()} ${msg}`);
+                // Auto scroll
+                this.$nextTick(() => {
+                    const container = document.getElementById('log-container');
+                    if (container) container.scrollTop = container.scrollHeight;
+                });
+            },
+
+            async startInference() {
+                if (!this.inputFile || !this.apiKey) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: '请完善配置信息', type: 'error' } }));
+                    return;
+                }
+
+                this.logs = []; // Clear logs
+                this.addLog('正在启动任务...');
+                
+                try {
+                    const res = await fetch('/api/inference/run', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            input_file: this.inputFile,
+                            api_key: this.apiKey,
+                            base_url: this.apiBase,
+                            model: this.modelName,
+                            workers: this.workers
+                        })
+                    });
+                    const data = await res.json();
+                    
+                    if (data.status === 'success') {
+                        this.addLog(`任务已启动。输出文件: ${data.output_file}`);
+                        // Save output file for inspector
+                        localStorage.setItem('last_inference_output', data.output_file);
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (e) {
+                    this.addLog(`启动失败: ${e.message}`);
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message, type: 'error' } }));
+                }
+            },
+
+            async stopInference() {
+                try {
+                    await fetch('/api/inference/stop', { method: 'POST' });
+                    this.addLog('发送停止信号...');
+                } catch (e) {
+                    this.addLog(`停止失败: ${e.message}`);
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

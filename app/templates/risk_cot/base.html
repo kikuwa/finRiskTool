@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>金融风控AI系统 - 首页增强访问</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#359EFF",
+                        "navy-dark": "#f1f5f9",
+                        "navy-sidebar": "#ffffff",
+                        "slate-bg": "#f8fafc",
+                        "slate-card": "#ffffff",
+                        "terminal-border": "rgba(53, 158, 255, 0.2)"
+                    },
+                    fontFamily: {
+                        display: ["Manrope", "Noto Sans SC", "sans-serif"],
+                        sans: ["Noto Sans SC", "Manrope", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-slate-bg text-slate-800 font-sans;
+            }
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            @apply border-primary/60 bg-white shadow-md;
+        }
+        .sidebar-item-active {
+            @apply bg-primary/15 text-primary border-r-2 border-primary;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+        }
+        .fill-1 {
+            font-variation-settings: 'FILL' 1;
+        }
+        .compact-node {
+            @apply flex flex-col items-center justify-center bg-white border border-slate-200 rounded-lg p-3 transition-all duration-300 shadow-sm;
+        }
+        .compact-node:hover {
+            @apply border-primary/50 bg-slate-50;
+        }
+        .connector-line {
+            @apply flex-1 h-[1px] bg-slate-200 self-center mx-1;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 flex-shrink-0 bg-navy-sidebar border-r border-slate-200 flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="bg-primary size-8 rounded flex items-center justify-center text-slate-900">
+<span class="material-symbols-outlined text-lg">shield</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 text-sm font-bold tracking-tight">金融风控AI系统</h1>
+<p class="text-slate-500 text-[8px] font-bold uppercase tracking-wider">Risk Intelligence</p>
+</div>
+</div>
+<nav class="flex-1 px-3 mt-4 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-2.5 rounded-lg sidebar-item-active transition-all" href="#">
+<span class="material-symbols-outlined text-[20px] fill-1">grid_view</span>
+<span class="text-xs font-semibold">首页</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">database</span>
+<span class="text-xs font-medium">PULearning 数据处理</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span class="text-xs font-medium">数据工程</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+<span class="text-xs font-medium">特征工程</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">prompt_suggestion</span>
+<span class="text-xs font-medium">Prompt设计</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">psychology</span>
+<span class="text-xs font-medium">COT数据合成</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-500 hover:bg-slate-200/50 hover:text-slate-900 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]">fact_check</span>
+<span class="text-xs font-medium">COT数据质检</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200">
+<div class="px-4 py-2">
+<div class="text-[9px] font-bold text-slate-600 uppercase tracking-widest">v2.4.0 Final</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col overflow-y-auto bg-slate-bg">
+<header class="h-14 flex items-center justify-between px-8 bg-slate-bg/50 backdrop-blur-md sticky top-0 z-20 border-b border-slate-200">
+<div class="flex items-center gap-4">
+<h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+<span>首页</span>
+<span class="text-slate-700">/</span>
+<span class="text-slate-500 uppercase tracking-wider">Dashboard Navigation</span>
+</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-200/40 border border-slate-300">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Ready</span>
+</div>
+<div class="h-4 w-px bg-slate-200"></div>
+<button class="text-slate-500 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined text-lg">help_outline</span>
+</button>
+<button class="text-slate-500 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined text-lg">settings</span>
+</button>
+</div>
+</header>
+<div class="px-8 py-10 max-w-[1400px] mx-auto w-full space-y-12">
+<div class="flex items-center gap-4">
+<div class="h-8 w-1 bg-primary rounded-full"></div>
+<div>
+<h2 class="text-xl font-bold text-slate-900 tracking-tight">金融风控流水线</h2>
+<p class="text-slate-500 text-xs font-medium">端到端风控AI工作流结构概览</p>
+</div>
+</div>
+<div class="py-8 px-8 rounded-2xl bg-slate-100 border border-slate-200">
+<div class="flex items-center justify-center w-full max-w-4xl mx-auto">
+<div class="compact-node min-w-[100px]">
+<span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">database</span>
+<span class="text-[10px] font-semibold text-slate-700">数据集管理</span>
+</div>
+<div class="connector-line"></div>
+<div class="compact-node min-w-[100px]">
+<span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">account_tree</span>
+<span class="text-[10px] font-semibold text-slate-700">数据工程</span>
+</div>
+<div class="connector-line"></div>
+<div class="compact-node min-w-[100px]">
+<span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">hub</span>
+<span class="text-[10px] font-semibold text-slate-700">特征工程</span>
+</div>
+<div class="connector-line"></div>
+<div class="compact-node min-w-[100px]">
+<span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">prompt_suggestion</span>
+<span class="text-[10px] font-semibold text-slate-700">Prompt设计</span>
+</div>
+<div class="connector-line"></div>
+<div class="compact-node min-w-[100px]">
+<span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">psychology</span>
+<span class="text-[10px] font-semibold text-slate-700">COT数据合成</span>
+</div>
+<div class="connector-line"></div>
+<div class="compact-node min-w-[100px]">
+<span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">fact_check</span>
+<span class="text-[10px] font-semibold text-slate-700">COT数据质检</span>
+</div>
+</div>
+</div>
+<div class="space-y-8">
+<div class="flex items-center gap-3">
+<span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">快速访问 Quick Access</span>
+<div class="h-px flex-1 bg-slate-200/60"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="#">
+<div>
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">database</span>
+</div>
+<h5 class="text-lg font-bold text-slate-900 mb-2">数据集管理</h5>
+<p class="text-sm text-slate-500 leading-relaxed">管理原始资产与入库流水</p>
+</div>
+<div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+<span>进入模块</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</a>
+<a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="#">
+<div>
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">account_tree</span>
+</div>
+<h5 class="text-lg font-bold text-slate-900 mb-2">数据工程</h5>
+<p class="text-sm text-slate-500 leading-relaxed">可视化ETL清洗与预处理</p>
+</div>
+<div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+<span>进入模块</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</a>
+<a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="#">
+<div>
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">hub</span>
+</div>
+<h5 class="text-lg font-bold text-slate-900 mb-2">特征工程</h5>
+<p class="text-sm text-slate-500 leading-relaxed">风控指标维度提取与管理</p>
+</div>
+<div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+<span>进入模块</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</a>
+<a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="#">
+<div>
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">prompt_suggestion</span>
+</div>
+<h5 class="text-lg font-bold text-slate-900 mb-2">Prompt设计</h5>
+<p class="text-sm text-slate-500 leading-relaxed">大模型指令集优化与调试</p>
+</div>
+<div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+<span>进入模块</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</a>
+<a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="#">
+<div>
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">psychology</span>
+</div>
+<h5 class="text-lg font-bold text-slate-900 mb-2">COT数据合成</h5>
+<p class="text-sm text-slate-500 leading-relaxed">思维链推理样本自动化生产</p>
+</div>
+<div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+<span>进入模块</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</a>
+<a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="#">
+<div>
+<div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-primary text-3xl">fact_check</span>
+</div>
+<h5 class="text-lg font-bold text-slate-900 mb-2">COT数据质检</h5>
+<p class="text-sm text-slate-500 leading-relaxed">合成数据逻辑闭环审核</p>
+</div>
+<div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+<span>进入模块</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+</a>
+</div>
+</div>
+</div>
+<footer class="mt-auto border-t border-slate-200 bg-navy-sidebar/20 px-12 py-6">
+<div class="flex items-center justify-between">
+<div class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600">
+                    © 2024 金融风控AI系统 | 核心架构模组
+                </div>
+<div class="flex gap-6 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+<a class="hover:text-primary transition-colors" href="#">文档</a>
+<a class="hover:text-primary transition-colors" href="#">协议</a>
+<a class="hover:text-primary transition-colors" href="#">支持</a>
+</div>
+</div>
+</footer>
+</main>
+</div>
+
+</body></html>

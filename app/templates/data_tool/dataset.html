@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}数据集管理 - 金融风控AI系统{% endblock %}
+
+{% block header %}
+<div class="flex items-center gap-4 w-full">
+    <h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+    <span>数据处理</span>
+    <span class="text-slate-700">/</span>
+    <span class="text-slate-500 uppercase tracking-wider">数据集管理</span>
+    </h2>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1200px] mx-auto w-full space-y-8" x-data="datasetApp()">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">数据集管理</h1>
+            <p class="text-slate-500 text-sm mt-1">管理模型训练所需的原始数据与中间结果</p>
+        </div>
+        <button class="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">refresh</span>
+            刷新状态
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- 训练集文件上传 -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-primary border border-blue-100">
+                    <span class="material-symbols-outlined text-[24px]">upload_file</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">训练集文件</h3>
+                    <p class="text-slate-500 text-xs">包含特征和标签的CSV文件 (train.csv)</p>
+                </div>
+                <div class="ml-auto">
+                    <span class="px-2 py-1 rounded-md bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">Required</span>
+                </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-primary/50 hover:bg-blue-50/30 transition-all cursor-pointer group relative"
+                 @dragover.prevent="$el.classList.add('border-primary', 'bg-blue-50/30')"
+                 @dragleave.prevent="$el.classList.remove('border-primary', 'bg-blue-50/30')"
+                 @drop.prevent="handleDrop($event, 'train')">
+                
+                <input type="file" x-ref="trainInput" accept=".csv" class="hidden" @change="handleFileSelect($event, 'train')">
+                
+                <div x-show="!uploading.train">
+                    <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block group-hover:text-primary/70 transition-colors">cloud_upload</span>
+                    <p class="text-slate-600 font-medium mb-1">点击或拖拽上传</p>
+                    <p class="text-slate-400 text-xs mb-4">支持 CSV 格式，最大 500MB</p>
+                    <button @click="$refs.trainInput.click()" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
+                        选择文件
+                    </button>
+                </div>
+                
+                <div x-show="uploading.train" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl z-10">
+                    <div class="size-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-3"></div>
+                    <p class="text-primary font-bold text-sm">正在上传...</p>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="material-symbols-outlined text-slate-400 text-[18px]">description</span>
+                    <span class="text-xs text-slate-600 font-mono truncate" x-text="files.train || '未上传文件'"></span>
+                </div>
+                <span class="text-[10px] font-bold uppercase" :class="files.train ? 'text-green-600' : 'text-slate-400'" x-text="files.train ? 'Ready' : 'Empty'"></span>
+            </div>
+        </div>
+
+        <!-- PU打分文件上传 -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="size-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100">
+                    <span class="material-symbols-outlined text-[24px]">analytics</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">PU预测结果</h3>
+                    <p class="text-slate-500 text-xs">PU Bagging模型生成的预测文件</p>
+                </div>
+                <div class="ml-auto">
+                    <span class="px-2 py-1 rounded-md bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">Optional</span>
+                </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-purple-500/50 hover:bg-purple-50/30 transition-all cursor-pointer group relative"
+                 @dragover.prevent="$el.classList.add('border-purple-500', 'bg-purple-50/30')"
+                 @dragleave.prevent="$el.classList.remove('border-purple-500', 'bg-purple-50/30')"
+                 @drop.prevent="handleDrop($event, 'pu')">
+                 
+                <input type="file" x-ref="puInput" accept=".csv" class="hidden" @change="handleFileSelect($event, 'pu')">
+                
+                <div x-show="!uploading.pu">
+                    <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block group-hover:text-purple-500/70 transition-colors">cloud_upload</span>
+                    <p class="text-slate-600 font-medium mb-1">点击或拖拽上传</p>
+                    <p class="text-slate-400 text-xs mb-4">通常由PU Learning模块生成</p>
+                    <button @click="$refs.puInput.click()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-purple-500 hover:text-purple-600 text-sm font-bold rounded-lg transition-all">
+                        选择文件
+                    </button>
+                </div>
+                
+                <div x-show="uploading.pu" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl z-10">
+                    <div class="size-10 border-4 border-slate-200 border-t-purple-500 rounded-full animate-spin mb-3"></div>
+                    <p class="text-purple-600 font-bold text-sm">正在上传...</p>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="material-symbols-outlined text-slate-400 text-[18px]">description</span>
+                    <span class="text-xs text-slate-600 font-mono truncate" x-text="files.pu || '未上传文件'"></span>
+                </div>
+                <span class="text-[10px] font-bold uppercase" :class="files.pu ? 'text-green-600' : 'text-slate-400'" x-text="files.pu ? 'Ready' : 'Empty'"></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Data Preview (Placeholder) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h3 class="font-bold text-slate-800 text-sm">数据预览</h3>
+            <span class="text-xs text-slate-400">仅展示前 5 行</span>
+        </div>
+        <div class="p-8 text-center text-slate-500 text-sm">
+            <span class="material-symbols-outlined text-3xl mb-2 text-slate-300 block">table_view</span>
+            暂无预览数据，请先上传文件
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function datasetApp() {
+        return {
+            uploading: {
+                train: false,
+                pu: false
+            },
+            files: {
+                train: 'data/train.csv', // Default assumption
+                pu: ''
+            },
+            
+            handleFileSelect(event, type) {
+                const file = event.target.files[0];
+                if (file) this.uploadFile(file, type);
+            },
+            
+            handleDrop(event, type) {
+                this.$el.classList.remove('border-primary', 'bg-blue-50/30', 'border-purple-500', 'bg-purple-50/30');
+                const file = event.dataTransfer.files[0];
+                if (file) this.uploadFile(file, type);
+            },
+            
+            async uploadFile(file, type) {
+                if (!file.name.endsWith('.csv')) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: '只允许上传 CSV 文件', type: 'error' } }));
+                    return;
+                }
+                
+                this.uploading[type] = true;
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const endpoint = type === 'train' ? '/data_tool/upload_train' : '/data_tool/upload_pu';
+                
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        this.files[type] = file.name;
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '文件上传成功', type: 'success' } }));
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (e) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message || '上传失败', type: 'error' } }));
+                } finally {
+                    this.uploading[type] = false;
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

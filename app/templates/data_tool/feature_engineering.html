@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}特征工程 - AutoML - 金融风控AI系统{% endblock %}
+
+{% block header %}
+<div class="flex items-center gap-4 w-full">
+    <h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+    <span>特征工程</span>
+    <span class="text-slate-700">/</span>
+    <span class="text-slate-500 uppercase tracking-wider">AutoML</span>
+    </h2>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto w-full space-y-6" x-data="featureEngineeringApp()">
+    
+    <!-- Hero / Header -->
+    <div class="relative bg-white rounded-2xl p-8 shadow-sm border border-slate-200 overflow-hidden mb-6">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-cyan-500/10 to-transparent rounded-bl-full -mr-10 -mt-10 pointer-events-none"></div>
+        
+        <div class="relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-50 border border-cyan-100 text-cyan-600 text-[10px] font-bold tracking-widest mb-4">
+                <span class="material-symbols-outlined text-[14px]">hub</span> AutoML Feature Selection
+            </div>
+            <h1 class="text-3xl font-bold text-slate-900 mb-4">AutoML 自动化特征筛选</h1>
+            <p class="text-slate-500 max-w-2xl leading-relaxed text-sm">
+                采用多策略集成学习框架，深度融合互信息 (Mutual Information)、XGBoost 增益与 Random Forest 基尼指数。
+                自动化识别与剔除冗余特征，精准定位关键风险因子，为下游模型构建提供高质量特征子集。
+            </p>
+        </div>
+
+        <div class="mt-8 flex items-center gap-4">
+            <button @click="runFeatureSelection" 
+                    :disabled="loading"
+                    class="px-8 py-3 bg-cyan-600 text-white text-sm font-bold rounded-xl hover:bg-cyan-700 transition-all shadow-lg shadow-cyan-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[20px]" :class="{'animate-spin': loading}" x-text="loading ? 'sync' : 'play_arrow'"></span>
+                <span x-text="loading ? '正在进行特征筛选...' : '开始特征筛选'"></span>
+            </button>
+            
+            <div class="relative">
+                <input type="file" x-ref="fileInput" accept=".csv" class="hidden" @change="handleFileSelect($event)">
+                <button @click="$refs.fileInput.click()" 
+                        :disabled="uploading"
+                        class="px-6 py-3 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-70">
+                    <span class="material-symbols-outlined text-[20px]" :class="{'animate-bounce': uploading}">upload_file</span>
+                    <span x-text="uploading ? '正在上传...' : '上传训练数据'"></span>
+                </button>
+            </div>
+            
+            <div class="text-xs text-slate-500 font-medium" x-show="currentFile">
+                当前文件: <span class="font-bold text-slate-700" x-text="currentFile"></span>
+                <span class="text-green-500 ml-2 flex inline-flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[12px]">check_circle</span> Ready
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs & Results -->
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6">
+        
+        <!-- Logs (Collapsible or always visible during run) -->
+        <div class="bg-slate-900 rounded-2xl overflow-hidden shadow-lg border border-slate-800" x-show="logs.length > 0 || loading">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/50">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-slate-400 text-sm">terminal</span>
+                    <span class="text-xs font-mono text-slate-400">EXECUTION LOGS</span>
+                </div>
+                <button @click="logs = []" class="text-slate-500 hover:text-slate-300 text-xs flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">close</span> 关闭
+                </button>
+            </div>
+            <div class="p-4 max-h-48 overflow-y-auto font-mono text-xs text-slate-300 space-y-1" x-ref="logContainer">
+                 <template x-for="(log, idx) in logs" :key="idx">
+                    <div class="break-words border-l-2 pl-3 py-0.5" :class="{'border-red-500 text-red-400': log.type === 'error', 'border-green-500 text-green-400': log.type === 'success', 'border-slate-700': log.type === 'info'}">
+                        <span x-text="log.message"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-8 py-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">特征排名结果</h3>
+                    <p class="text-slate-500 text-xs mt-1">综合三个训练子集的特征重要性排名</p>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Load Previous Results Button (Conditional) -->
+                    <button @click="loadResults" 
+                            x-show="!hasResults && canLoadOldResults"
+                            class="px-4 py-2 bg-slate-50 text-slate-600 text-sm font-bold rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-2 border border-slate-200">
+                        <span class="material-symbols-outlined text-[18px]">history</span>
+                        加载历史结果
+                    </button>
+
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                        <input type="text" x-model="searchQuery" placeholder="搜索特征..." class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-none w-64 transition-all">
+                    </div>
+                    <a href="{{ url_for('data_tool.download_results') }}" 
+                       :class="{'pointer-events-none opacity-50': !hasResults}"
+                       class="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">download</span>
+                        下载CSV
+                    </a>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                        <tr>
+                            <th class="px-8 py-4 w-20">排名</th>
+                            <th class="px-6 py-4">特征名称 (中文)</th>
+                            <th class="px-6 py-4">特征名称 (英文)</th>
+                            <th class="px-6 py-4 text-center">子集1 排名</th>
+                            <th class="px-6 py-4 text-center">子集2 排名</th>
+                            <th class="px-6 py-4 text-center">子集3 排名</th>
+                            <th class="px-6 py-4 text-right">平均排名</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-if="!results || results.length === 0">
+                            <tr>
+                                <td colspan="7" class="px-8 py-16 text-center text-slate-400">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <div class="size-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                            <span class="material-symbols-outlined text-[32px] text-slate-300">bar_chart</span>
+                                        </div>
+                                        <p class="font-medium">暂无特征排名数据</p>
+                                        <p class="text-xs mt-1">请先运行特征选择算法</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                        
+                        <template x-for="(row, idx) in filteredResults" :key="idx">
+                            <tr class="hover:bg-cyan-50/30 transition-colors group">
+                                <td class="px-8 py-4">
+                                    <div class="size-8 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm"
+                                         :class="{
+                                             'bg-yellow-100 text-yellow-600 border border-yellow-200': idx === 0,
+                                             'bg-slate-200 text-slate-600 border border-slate-300': idx === 1,
+                                             'bg-orange-100 text-orange-600 border border-orange-200': idx === 2,
+                                             'bg-slate-50 text-slate-400 border border-slate-100': idx > 2
+                                         }">
+                                        <span x-text="idx + 1"></span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 font-bold text-slate-800" x-text="row['特征名称（中文）']"></td>
+                                <td class="px-6 py-4 font-mono text-slate-500 text-xs" x-text="row['特征名称（英文）']"></td>
+                                <td class="px-6 py-4 text-center text-slate-400 text-xs" x-text="row['训练集1_高置信负转正_排名'] || '-'"></td>
+                                <td class="px-6 py-4 text-center text-slate-400 text-xs" x-text="row['训练集2_伪正样本补充_排名'] || '-'"></td>
+                                <td class="px-6 py-4 text-center text-slate-400 text-xs" x-text="row['训练集3_原始数据_排名'] || '-'"></td>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden hidden md:block">
+                                            <!-- Inverse progress bar since lower rank is better. Assuming max rank ~100 or relative -->
+                                            <div class="h-full bg-cyan-500 rounded-full" :style="`width: ${Math.max(5, 100 - (row['平均排名'] / 2))}%`"></div>
+                                        </div>
+                                        <span class="font-bold text-cyan-600 font-mono" x-text="row['平均排名'].toFixed(2)"></span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination / Toggle -->
+            <div class="px-8 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4" x-show="results && results.length > 0">
+                <div class="text-xs text-slate-500">
+                    显示 <span class="font-bold text-slate-700" x-text="filteredResults.length"></span> 条结果 
+                    <span x-show="!showAll && results.length > 10" class="text-slate-400">(共 <span x-text="results.length"></span> 条)</span>
+                </div>
+                
+                <button @click="showAll = !showAll" 
+                        x-show="results.length > 10"
+                        class="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:text-cyan-600 hover:border-cyan-200 hover:shadow-sm transition-all">
+                    <span x-text="showAll ? '收起结果 (Show Top 10 Only)' : '查看全部特征 (Show All)'"></span>
+                    <span class="material-symbols-outlined text-[16px] group-hover:translate-y-0.5 transition-transform" 
+                          :class="showAll ? 'rotate-180' : ''">expand_more</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function featureEngineeringApp() {
+        return {
+            loading: false,
+            uploading: false,
+            currentFile: 'data/train.csv',
+            logs: [],
+            results: null,
+            searchQuery: '',
+            hasResults: false,
+
+            canLoadOldResults: false,
+            showAll: false,
+
+            init() {
+                // Check if results exist but DO NOT load them automatically
+                this.checkExistingResults();
+            },
+            
+            async checkExistingResults() {
+                try {
+                    // Head request to check if file exists
+                    const res = await fetch('{{ url_for("data_tool.get_results_data") }}', { method: 'HEAD' });
+                    if (res.ok) {
+                        this.canLoadOldResults = true;
+                    }
+                } catch (e) {
+                    console.log("No existing results found");
+                }
+            },
+            
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (file) this.uploadFile(file);
+            },
+            
+            async uploadFile(file) {
+                if (!file) return;
+
+                if (!file.name.toLowerCase().endsWith('.csv')) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: '只允许上传 CSV 文件', type: 'error' } }));
+                    return;
+                }
+                
+                this.uploading = true;
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const res = await fetch('{{ url_for("data_tool.upload_train") }}', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!res.ok) {
+                        const text = await res.text();
+                        try {
+                            const data = JSON.parse(text);
+                            throw new Error(data.error || `Server error: ${res.status}`);
+                        } catch (e) {
+                            throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+                        }
+                    }
+
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        this.currentFile = file.name;
+                        this.addLog(`文件 ${file.name} 上传成功`, 'success');
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '文件上传成功', type: 'success' } }));
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (e) {
+                    console.error('Upload error:', e);
+                    this.addLog(`上传失败: ${e.message}`, 'error');
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message || '上传失败', type: 'error' } }));
+                } finally {
+                    this.uploading = false;
+                }
+            },
+
+            get filteredResults() {
+                if (!this.results) return [];
+                let res = this.results;
+                
+                if (this.searchQuery) {
+                    const q = this.searchQuery.toLowerCase();
+                    res = res.filter(r => 
+                        (r['特征名称（中文）'] && r['特征名称（中文）'].toLowerCase().includes(q)) ||
+                        (r['特征名称（英文）'] && r['特征名称（英文）'].toLowerCase().includes(q))
+                    );
+                }
+                
+                return this.showAll ? res : res.slice(0, 10);
+            },
+
+            addLog(message, type = 'info') {
+                this.logs.push({ message, type });
+                this.$nextTick(() => {
+                    const container = this.$refs.logContainer;
+                    if (container) container.scrollTop = container.scrollHeight;
+                });
+            },
+
+            async runFeatureSelection() {
+                this.loading = true;
+                this.logs = [];
+                this.addLog('开始初始化特征选择流程...', 'info');
+                
+                try {
+                    const res = await fetch('{{ url_for("data_tool.run_model_feature_selection") }}', {
+                        method: 'POST'
+                    });
+                    const data = await res.json();
+                    
+                    if (data.log) {
+                        data.log.split('\n').forEach(line => {
+                            if (line.trim()) this.addLog(line);
+                        });
+                    }
+                    
+                    if (data.success) {
+                        this.addLog('特征筛选完成！', 'success');
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '特征筛选完成', type: 'success' } }));
+                        await this.loadResults();
+                    } else {
+                        this.addLog('运行失败: ' + (data.error || '未知错误'), 'error');
+                        if (data.stderr) {
+                             data.stderr.split('\n').forEach(line => {
+                                if (line.trim()) this.addLog(line, 'error');
+                            });
+                        }
+                    }
+                } catch (e) {
+                    this.addLog('网络请求错误: ' + e.message, 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async loadResults() {
+                try {
+                    const res = await fetch('{{ url_for("data_tool.get_results_data") }}');
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data)) {
+                            this.results = data;
+                            this.hasResults = true;
+                            // Reset loading state for button if needed, though this is load, not run
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: '已加载历史运行结果', type: 'info' } }));
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load initial results');
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

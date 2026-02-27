@@ -1,5 +1,0 @@
-{"instruction": "Evaluate the risk of this transaction.", "input": "Transaction amount: $10. User location: Home.", "output": "Low risk. This transaction is consistent with user behavior."}
-{"instruction": "Should we approve this loan?", "input": "Credit score: 750. Income: Stable.", "output": "Approve. The applicant has good credit history."}
-{"instruction": "Classify this user activity.", "input": "User logged in from trusted device.", "output": "Safe activity."}
-{"instruction": "Review account creation.", "input": "Email verified. Phone verified.", "output": "Approve account creation."}
-{"instruction": "Check for anomalies.", "input": "Regular purchase pattern.", "output": "No anomalies detected."}

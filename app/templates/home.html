@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block header %}
+<div class="flex items-center gap-4 w-full">
+    <h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+    <span>首页</span>
+    <span class="text-slate-700">/</span>
+    <span class="text-slate-500 uppercase tracking-wider">Dashboard Navigation</span>
+    </h2>
+    <div class="ml-auto flex items-center gap-4">
+        <div class="flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-200/40 border border-slate-300">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Ready</span>
+        </div>
+        <div class="h-4 w-px bg-slate-200"></div>
+        <button class="text-slate-500 hover:text-slate-900 transition-colors">
+            <span class="material-symbols-outlined text-lg">help_outline</span>
+        </button>
+        <button class="text-slate-500 hover:text-slate-900 transition-colors">
+            <span class="material-symbols-outlined text-lg">settings</span>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto w-full space-y-12">
+    <div class="flex items-center gap-4">
+        <div class="h-8 w-1 bg-primary rounded-full"></div>
+        <div>
+            <h2 class="text-xl font-bold text-slate-900 tracking-tight">金融风控流水线</h2>
+            <p class="text-slate-500 text-xs font-medium">端到端风控AI工作流结构概览</p>
+        </div>
+    </div>
+    <div class="py-8 px-8 rounded-2xl bg-slate-100 border border-slate-200">
+        <div class="flex items-center justify-center w-full max-w-4xl mx-auto">
+            <div class="compact-node min-w-[100px]">
+                <span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">database</span>
+                <span class="text-[10px] font-semibold text-slate-700">数据集管理</span>
+            </div>
+            <div class="connector-line"></div>
+            <div class="compact-node min-w-[100px]">
+                <span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">account_tree</span>
+                <span class="text-[10px] font-semibold text-slate-700">数据工程</span>
+            </div>
+            <div class="connector-line"></div>
+            <div class="compact-node min-w-[100px]">
+                <span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">hub</span>
+                <span class="text-[10px] font-semibold text-slate-700">特征工程</span>
+            </div>
+            <div class="connector-line"></div>
+            <div class="compact-node min-w-[100px]">
+                <span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">prompt_suggestion</span>
+                <span class="text-[10px] font-semibold text-slate-700">Prompt设计</span>
+            </div>
+            <div class="connector-line"></div>
+            <div class="compact-node min-w-[100px]">
+                <span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">psychology</span>
+                <span class="text-[10px] font-semibold text-slate-700">COT数据合成</span>
+            </div>
+            <div class="connector-line"></div>
+            <div class="compact-node min-w-[100px]">
+                <span class="material-symbols-outlined text-slate-500 mb-1.5 text-lg">fact_check</span>
+                <span class="text-[10px] font-semibold text-slate-700">COT数据质检</span>
+            </div>
+        </div>
+    </div>
+    <div class="space-y-8">
+    <div class="flex items-center gap-3">
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">特征工程模块</span>
+        <div class="h-px flex-1 bg-slate-200/60"></div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="{{ url_for('data_tool.pu_bagging') }}">
+            <div>
+                <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-3xl">model_training</span>
+                </div>
+                <h5 class="text-lg font-bold text-slate-900 mb-2">PU Learning</h5>
+                <p class="text-sm text-slate-500 leading-relaxed">正例无标签学习与非平衡数据处理</p>
+            </div>
+            <div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                <span>进入模块</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+        </a>
+        <a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="{{ url_for('data_tool.ensemble_feature_selection') }}">
+            <div>
+                <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+                </div>
+                <h5 class="text-lg font-bold text-slate-900 mb-2">AutoML 特征筛选</h5>
+                <p class="text-sm text-slate-500 leading-relaxed">自动化特征选择与超参数优化</p>
+            </div>
+            <div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                <span>进入模块</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="flex items-center gap-3 mt-12">
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">大模型风控模块</span>
+        <div class="h-px flex-1 bg-slate-200/60"></div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="{{ url_for('risk_cot_views.index') }}">
+            <div>
+                <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-3xl">prompt_suggestion</span>
+                </div>
+                <h5 class="text-lg font-bold text-slate-900 mb-2">Prompt设计</h5>
+                <p class="text-sm text-slate-500 leading-relaxed">大模型指令集优化与调试</p>
+            </div>
+            <div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                <span>进入模块</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+        </a>
+        <a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="{{ url_for('risk_cot_views.inference') }}">
+            <div>
+                <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-3xl">psychology</span>
+                </div>
+                <h5 class="text-lg font-bold text-slate-900 mb-2">COT数据合成</h5>
+                <p class="text-sm text-slate-500 leading-relaxed">思维链推理样本自动化生产</p>
+            </div>
+            <div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                <span>进入模块</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+        </a>
+        <a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="{{ url_for('risk_cot_views.inspector') }}">
+            <div>
+                <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-3xl">fact_check</span>
+                </div>
+                <h5 class="text-lg font-bold text-slate-900 mb-2">COT数据质检</h5>
+                <p class="text-sm text-slate-500 leading-relaxed">合成数据逻辑闭环审核</p>
+            </div>
+            <div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                <span>进入模块</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+        </a>
+    </div>
+</div>
+</div>
+<footer class="mt-12 border-t border-slate-200 bg-white/50 px-12 py-6">
+    <div class="flex items-center justify-between">
+        <div class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-600">
+            © 2024 金融风控AI系统 | 核心架构模组
+        </div>
+        <div class="flex gap-6 text-[9px] font-bold uppercase tracking-wider text-slate-600">
+            <a class="hover:text-primary transition-colors" href="#">文档</a>
+            <a class="hover:text-primary transition-colors" href="#">协议</a>
+            <a class="hover:text-primary transition-colors" href="#">支持</a>
+        </div>
+    </div>
+</footer>
+{% endblock %}

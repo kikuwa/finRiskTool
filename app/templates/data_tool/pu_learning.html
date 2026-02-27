@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}特征工程 - PUlearning - 金融风控AI系统{% endblock %}
+
+{% block header %}
+<div class="flex items-center gap-4 w-full">
+    <h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+    <span>特征工程</span>
+    <span class="text-slate-700">/</span>
+    <span class="text-slate-500 uppercase tracking-wider">PUlearning</span>
+    </h2>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto w-full space-y-6" x-data="puLearningApp()">
+    
+    <!-- Hero / Header -->
+    <div class="relative bg-white rounded-2xl p-8 shadow-sm border border-slate-200 overflow-hidden mb-6">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-bl-full -mr-10 -mt-10 pointer-events-none"></div>
+        
+        <div class="relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-bold tracking-widest mb-4">
+                <span class="material-symbols-outlined text-[14px]">model_training</span> PU Learning
+            </div>
+            <h1 class="text-3xl font-bold text-slate-900 mb-4">PU Learning 正例无标签学习</h1>
+            <p class="text-slate-500 max-w-2xl leading-relaxed text-sm">
+                针对金融风控场景中仅有少量正样本（违约）和大量未标注样本的特点，采用 Bagging 集成学习策略。
+                通过多次迭代训练，从海量未标注数据中挖掘潜在的风险样本，有效解决正负样本极度不平衡问题。
+            </p>
+        </div>
+
+        <div class="mt-8 flex items-center gap-4">
+            <button @click="runModel" 
+                    :disabled="loading"
+                    class="px-8 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[20px]" :class="{'animate-spin': loading}" x-text="loading ? 'sync' : 'rocket_launch'"></span>
+                <span x-text="loading ? '正在训练模型...' : '开始训练模型'"></span>
+            </button>
+            
+            <div class="relative">
+                <input type="file" x-ref="fileInput" accept=".csv" class="hidden" @change="handleFileSelect($event)">
+                <button @click="$refs.fileInput.click()" 
+                        :disabled="uploading"
+                        class="px-6 py-3 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-70">
+                    <span class="material-symbols-outlined text-[20px]" :class="{'animate-bounce': uploading}">upload_file</span>
+                    <span x-text="uploading ? '正在上传...' : '上传训练数据'"></span>
+                </button>
+            </div>
+            
+            <div class="text-xs text-slate-500 font-medium" x-show="currentFile">
+                当前文件: <span class="font-bold text-slate-700" x-text="currentFile"></span>
+                <span class="text-green-500 ml-2 flex inline-flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[12px]">check_circle</span> Ready
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[calc(100vh-280px)] lg:min-h-[600px]">
+        
+        <!-- Left: Logs -->
+        <div class="lg:col-span-3 flex flex-col h-full">
+            <!-- Terminal / Logs -->
+            <div class="bg-slate-900 rounded-2xl p-0 shadow-lg border border-slate-800 flex flex-col overflow-hidden transition-all duration-300 ease-in-out h-full"
+                 :class="isLogExpanded ? 'fixed inset-4 z-50 h-auto' : 'relative w-full'">
+                
+                <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/50 flex-none h-[53px] box-border cursor-pointer"
+                     @dblclick="isLogExpanded = !isLogExpanded">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-slate-500 text-[16px]">terminal</span>
+                        <span class="text-[11px] font-mono text-slate-400 font-bold tracking-wider">SYSTEM LOGS</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="isLogExpanded = !isLogExpanded" class="text-slate-500 hover:text-slate-300 text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-white/5 transition-colors">
+                            <span class="material-symbols-outlined text-[16px]" x-text="isLogExpanded ? 'close_fullscreen' : 'open_in_full'"></span>
+                        </button>
+                        <button @click="logs = []" class="text-slate-500 hover:text-slate-300 text-xs flex items-center gap-1 px-2 py-1 rounded hover:bg-white/5 transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">delete</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex-1 p-4 overflow-y-auto font-mono text-xs text-slate-300 space-y-1 custom-scrollbar" x-ref="logContainer">
+                    <template x-for="(log, idx) in logs" :key="idx">
+                        <div class="break-words border-l-2 pl-3 py-0.5" :class="{'border-red-500 text-red-400': log.type === 'error', 'border-green-500 text-green-400': log.type === 'success', 'border-slate-700': log.type === 'info'}">
+                            <span class="opacity-50 mr-2 text-[10px]" x-text="log.time"></span>
+                            <span x-text="log.message"></span>
+                        </div>
+                    </template>
+                    <div x-show="logs.length === 0" class="text-slate-600 italic text-center mt-10">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-20">dvr</span>
+                        <p>等待任务启动...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Results -->
+        <div class="lg:col-span-9 flex flex-col gap-6 lg:h-full min-h-0">
+            
+            <!-- Row 1: Stats & Features -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 h-[320px] flex-none">
+                <!-- Result Stats -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between h-full">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 flex-none">
+                        <span class="w-1 h-4 bg-indigo-500 rounded-full"></span>
+                        结果统计
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-4 flex-1">
+                        <!-- Stat 1 -->
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 col-span-2 flex flex-col justify-center hover:shadow-md transition-shadow">
+                            <div class="text-xs text-slate-500 font-medium mb-1">正样本最低置信度</div>
+                            <div class="flex items-baseline gap-2">
+                                <div class="text-2xl font-black text-slate-800" x-text="results ? results.min_positive_confidence.toFixed(4) : '-'"></div>
+                                <div class="text-xs text-slate-400 font-medium mb-1">Confidence</div>
+                            </div>
+                            <div class="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                                <div class="bg-indigo-500 h-full transition-all duration-1000" :style="`width: ${results ? results.min_positive_confidence * 100 : 0}%`"></div>
+                            </div>
+                        </div>
+
+                        <!-- Stat 2 -->
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center hover:shadow-md transition-shadow">
+                            <div class="text-xs text-slate-500 font-medium mb-1">高置信度样本</div>
+                            <div class="text-xl font-black text-slate-800" x-text="results ? results.high_confidence_count : '-'"></div>
+                            <div class="text-[10px] text-slate-400 mt-1">Score > 0.9</div>
+                        </div>
+
+                        <!-- Stat 3 -->
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-center hover:shadow-md transition-shadow">
+                            <div class="text-xs text-slate-500 font-medium mb-1">总样本数</div>
+                            <div class="text-xl font-black text-slate-800" x-text="results ? results.total_samples : '-'"></div>
+                            <div class="text-[10px] text-slate-400 mt-1">Total Records</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Importance -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col h-full relative overflow-hidden">
+                     <!-- Empty State / Placeholder when no results -->
+                    <div x-show="!results || !results.feature_importance" class="absolute inset-0 flex flex-col items-center justify-center text-slate-300 bg-white z-10">
+                        <span class="material-symbols-outlined text-4xl opacity-20 mb-2">bar_chart</span>
+                        <span class="text-xs">运行模型后查看特征重要性</span>
+                    </div>
+
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2 flex-none">
+                        <span class="w-1 h-4 bg-indigo-500 rounded-full"></span>
+                        特征重要性 (Top 10)
+                    </h3>
+                    
+                    <div class="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                        <template x-for="(feat, idx) in (results ? results.feature_importance.slice(0, 10) : [])" :key="idx">
+                            <div class="flex items-center justify-between text-xs group hover:bg-slate-50 p-2 rounded-lg transition-colors border border-transparent hover:border-slate-100">
+                                <div class="flex items-center gap-3 w-2/3">
+                                    <span class="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold" 
+                                          :class="idx < 3 ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'" 
+                                          x-text="idx + 1"></span>
+                                    <span class="text-slate-600 font-medium truncate" :title="feat.feature" x-text="feat.feature"></span>
+                                </div>
+                                <div class="flex items-center gap-2 w-1/3 justify-end">
+                                    <div class="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                        <div class="bg-indigo-500 h-full transition-all duration-1000" :style="`width: ${(feat.importance / results.feature_importance[0].importance) * 100}%`"></div>
+                                    </div>
+                                    <span class="text-slate-400 font-mono" x-text="Math.round(feat.importance)"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Top 10 Table -->
+            <div class="bg-white rounded-2xl p-0 shadow-sm border border-slate-200 flex flex-col lg:flex-1 overflow-hidden min-h-0 h-[400px] lg:h-auto">
+                <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 flex-none h-[53px] box-border">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <span class="material-symbols-outlined text-indigo-500 text-[18px]">trophy</span>
+                        Top 10 风险样本
+                    </h3>
+                    <div x-show="results" class="flex gap-2">
+                        <a href="{{ url_for('data_tool.download_predictions') }}" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:underline flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">download</span> 下载全部
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Table Header -->
+                <div class="grid grid-cols-2 px-6 py-3 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider flex-none">
+                    <div>样本序号</div>
+                    <div class="text-right">违约风险概率</div>
+                </div>
+
+                <!-- Table Body -->
+                <div class="overflow-y-auto flex-1 custom-scrollbar">
+                    <template x-for="(item, idx) in (results ? results.top_10 : [])" :key="idx">
+                        <div class="grid grid-cols-2 px-6 py-3 border-b border-slate-50 hover:bg-blue-50/30 transition-colors group items-center">
+                            <div class="flex items-center gap-4">
+                                <!-- Rank Medal -->
+                                <div class="size-8 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm"
+                                     :class="{
+                                         'bg-yellow-100 text-yellow-600 border border-yellow-200': idx === 0,
+                                         'bg-slate-200 text-slate-600 border border-slate-300': idx === 1,
+                                         'bg-orange-100 text-orange-600 border border-orange-200': idx === 2,
+                                         'bg-slate-50 text-slate-400 border border-slate-100': idx > 2
+                                     }">
+                                    <span x-text="idx + 1"></span>
+                                </div>
+                                <span class="text-sm font-bold text-slate-700 font-mono" x-text="item.index"></span>
+                            </div>
+                            <div class="text-right flex items-center justify-end gap-3">
+                                <div class="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full shadow-sm" :style="`width: ${item['违约风险概率'] * 100}%`"></div>
+                                </div>
+                                <span class="text-sm font-bold text-red-500 font-mono w-16" x-text="item['违约风险概率'].toFixed(4)"></span>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <div x-show="!results" class="h-full flex flex-col items-center justify-center text-slate-300 space-y-2 p-8">
+                        <span class="material-symbols-outlined text-4xl opacity-20">bar_chart</span>
+                        <span class="text-xs">暂无数据</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function puLearningApp() {
+        return {
+            loading: false,
+            uploading: false,
+            currentFile: 'data/train.csv',
+            isLogExpanded: false,
+            logs: [],
+            results: null,
+
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (file) this.uploadFile(file);
+            },
+            
+            async uploadFile(file) {
+                if (!file) return;
+                
+                // Simple validation
+                if (!file.name.endsWith('.csv')) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: '只允许上传 CSV 文件', type: 'error' } }));
+                    return;
+                }
+                
+                this.uploading = true;
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    console.log('Uploading file:', file.name);
+                    const res = await fetch('{{ url_for("data_tool.upload_train") }}', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!res.ok) {
+                        const text = await res.text();
+                        try {
+                            const data = JSON.parse(text);
+                            throw new Error(data.error || `Server error: ${res.status}`);
+                        } catch (e) {
+                            throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+                        }
+                    }
+
+                    const data = await res.json();
+                    
+                    if (data.success) {
+                        this.currentFile = file.name;
+                        this.addLog(`文件 ${file.name} 上传成功`, 'success');
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '文件上传成功', type: 'success' } }));
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (e) {
+                    console.error('Upload error:', e);
+                    this.addLog(`上传失败: ${e.message}`, 'error');
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message || '上传失败', type: 'error' } }));
+                } finally {
+                    this.uploading = false;
+                }
+            },
+
+            addLog(message, type = 'info') {
+                const time = new Date().toLocaleTimeString();
+                this.logs.push({ time, message, type });
+                this.$nextTick(() => {
+                    const container = this.$refs.logContainer;
+                    container.scrollTop = container.scrollHeight;
+                });
+            },
+
+            async runModel() {
+                this.loading = true;
+                this.logs = [];
+                this.results = null;
+                this.addLog('正在启动 PU Bagging 模型...', 'info');
+
+                try {
+                    const res = await fetch('{{ url_for("data_tool.run_model") }}', {
+                        method: 'POST'
+                    });
+                    const data = await res.json();
+
+                    // Split log by lines and add them
+                    if (data.log) {
+                        data.log.split('\n').forEach(line => {
+                            if (line.trim()) this.addLog(line);
+                        });
+                    }
+                    if (data.stderr) {
+                        data.stderr.split('\n').forEach(line => {
+                            if (line.trim()) this.addLog(line, 'error');
+                        });
+                    }
+
+                    if (data.success) {
+                        this.addLog('模型运行成功', 'success');
+                        this.results = data;
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '模型运行完成', type: 'success' } }));
+                    } else {
+                        this.addLog('模型运行失败: ' + data.error, 'error');
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '运行失败', type: 'error' } }));
+                    }
+                } catch (e) {
+                    this.addLog('请求错误: ' + e.message, 'error');
+                } finally {
+                    this.loading = false;
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>{% block title %}金融风控AI系统{% endblock %}</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3b82f6",
+                        "navy-950": "#F8FAFC",
+                        "navy-900": "#FFFFFF",
+                        "navy-800": "#E2E8F0",
+                        "navy-700": "#CBD5E1",
+                        "accent": "#60a5fa",
+                        "protected": "#f59e0b",
+                        "slate-bg": "#f8fafc",
+                        "slate-card": "#ffffff",
+                        // Map gray to slate for consistency
+                        "gray": {
+                            50: "#f8fafc",
+                            100: "#f1f5f9",
+                            200: "#e2e8f0",
+                            300: "#cbd5e1",
+                            400: "#94a3b8",
+                            500: "#64748b",
+                            600: "#475569",
+                            700: "#334155",
+                            800: "#1e293b",
+                            900: "#0f172a",
+                            950: "#020617"
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Noto Sans SC", "Manrope", "sans-serif"],
+                        "sans": ["Noto Sans SC", "Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Noto Sans SC', 'Manrope', sans-serif;
+            @apply bg-slate-50 text-slate-800;
+        }
+        .canvas-grid {
+            background-image: radial-gradient(circle, #E2E8F0 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+        .node-base {
+            @apply bg-white border border-slate-200 shadow-sm hover:border-primary transition-all duration-300;
+        }
+        .node-active {
+            @apply border-primary shadow-[0_0_20px_rgba(59,130,246,0.15)];
+        }
+        .sidebar-item {
+            @apply flex items-center gap-3 px-4 py-3 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200;
+        }
+        .sidebar-item-active {
+            @apply flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-bold border-l-4 border-primary rounded-l-none;
+        }
+        .bar-chart-missing {
+            background: linear-gradient(to top, #ef4444 60%, #3b82f6 60%);
+        }
+        .bar-chart-cleaned {
+            background: #3b82f6;
+        }
+        .bar-protected {
+            @apply border-2 border-protected relative;
+            background: #3b82f6;
+        }
+        .protected-badge {
+            @apply absolute -top-5 left-1/2 -translate-x-1/2 text-protected;
+            font-size: 14px;
+        }
+        /* Notification Toast */
+        .toast-notification {
+            @apply fixed bottom-4 right-4 px-6 py-3 rounded-xl shadow-lg transform transition-all duration-300 z-50 flex items-center space-x-3;
+        }
+        .toast-success { @apply bg-white border-l-4 border-green-500 text-gray-800; }
+        .toast-error { @apply bg-white border-l-4 border-red-500 text-gray-800; }
+        .toast-warning { @apply bg-white border-l-4 border-yellow-500 text-gray-800; }
+        .toast-info { @apply bg-white border-l-4 border-blue-500 text-gray-800; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.8);
+        }
+    </style>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="h-screen overflow-hidden" x-data="{ notifications: [] }" @notify.window="notifications.push($event.detail); setTimeout(() => notifications.shift(), 3000)">
+<div class="flex h-full">
+<aside class="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col z-10">
+<div class="p-6 flex items-center gap-3 border-b border-slate-100">
+<div class="bg-primary size-10 rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined font-bold">shield_with_house</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 text-base font-black leading-none tracking-tight">金融风控AI系统</h1>
+<p class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.15em] mt-1">Enterprise System</p>
+</div>
+</div>
+<nav class="flex-1 px-2 py-6 space-y-1 overflow-y-auto">
+<a class="{{ 'sidebar-item-active' if active_page == 'home' else 'sidebar-item' }}" href="{{ url_for('main.index') }}">
+<span class="material-symbols-outlined text-[22px]">home</span>
+<span class="text-sm font-medium">首页</span>
+</a>
+<div class="px-4 py-2 mt-2 mb-1">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">特征工程</span>
+</div>
+<a class="{{ 'sidebar-item-active' if active_page == 'data_engineering' else 'sidebar-item' }}" href="{{ url_for('data_tool.pu_bagging') }}">
+<span class="material-symbols-outlined text-[22px]">model_training</span>
+<span class="text-sm font-medium">PU Learning</span>
+</a>
+<a class="{{ 'sidebar-item-active' if active_page == 'feature_engineering' else 'sidebar-item' }}" href="{{ url_for('data_tool.ensemble_feature_selection') }}">
+<span class="material-symbols-outlined text-[22px]">hub</span>
+<span class="text-sm font-medium">AutoML 特征筛选</span>
+</a>
+<div class="px-4 py-2 mt-2 mb-1">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">COT工程</span>
+</div>
+<a class="{{ 'sidebar-item-active' if active_page == 'prompt' else 'sidebar-item' }}" href="{{ url_for('risk_cot_views.index') }}">
+<span class="material-symbols-outlined text-[22px]">terminal</span>
+<span class="text-sm font-medium">Prompt设计</span>
+</a>
+<a class="{{ 'sidebar-item-active' if active_page == 'cot_synthesis' else 'sidebar-item' }}" href="{{ url_for('risk_cot_views.inference') }}">
+<span class="material-symbols-outlined text-[22px]">auto_graph</span>
+<span class="text-sm font-medium">COT数据合成</span>
+</a>
+<a class="{{ 'sidebar-item-active' if active_page == 'cot_inspection' else 'sidebar-item' }}" href="{{ url_for('risk_cot_views.inspector') }}">
+<span class="material-symbols-outlined text-[22px]">fact_check</span>
+<span class="text-sm font-medium">COT数据质检</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-100">
+<div class="flex items-center justify-center py-2">
+<span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Version 2.4.0-LTS</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-slate-50 relative">
+    <!-- Header Area if needed -->
+    <header class="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 sticky top-0 z-10">
+        <h2 class="text-lg font-bold text-slate-800">
+            {% block header %}{% endblock %}
+        </h2>
+        <div class="flex items-center space-x-4">
+             <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-xs font-medium text-slate-600">
+                 <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                 System Online
+             </div>
+        </div>
+    </header>
+
+    <div class="flex-1 overflow-auto p-6">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Notifications -->
+    <template x-for="note in notifications">
+        <div class="toast-notification" 
+             :class="{
+                 'toast-success': !note.type || note.type === 'success',
+                 'toast-error': note.type === 'error',
+                 'toast-warning': note.type === 'warning',
+                 'toast-info': note.type === 'info'
+             }"
+             x-transition:enter="translate-y-10 opacity-0"
+             x-transition:enter-end="translate-y-0 opacity-100"
+             x-transition:leave="translate-y-10 opacity-0">
+            <span x-text="note.message"></span>
+        </div>
+    </template>
+</main>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

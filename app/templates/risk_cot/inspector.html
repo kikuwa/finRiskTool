@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}智能质检与评估 - 金融风控AI系统{% endblock %}
+
+{% block header %}
+<div class="flex items-center gap-4 w-full">
+    <h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
+    <span>大模型风控</span>
+    <span class="text-slate-700">/</span>
+    <span class="text-slate-500 uppercase tracking-wider">Evaluation</span>
+    </h2>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1400px] mx-auto w-full space-y-6" x-data="inspectorApp()">
+    
+    <!-- Top Control Bar -->
+    <div class="relative bg-white rounded-2xl p-8 shadow-sm border border-slate-200 overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-orange-500/5 to-transparent rounded-bl-full -mr-10 -mt-10 pointer-events-none"></div>
+        
+        <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-100 text-orange-600 text-[10px] font-bold tracking-widest mb-4">
+                    <span class="material-symbols-outlined text-[14px]">fact_check</span> INSPECTOR
+                </div>
+                <h1 class="text-3xl font-bold text-slate-900 mb-4">智能质检与评估</h1>
+                <p class="text-slate-500 max-w-2xl leading-relaxed text-sm">
+                    对大模型生成的风控分析报告进行自动化质量评估。支持基于规则的快速校验（如格式、关键词）
+                    和基于 Model-as-a-Judge 的深度评分，确保输出内容的准确性与合规性。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-320px)] min-h-[800px]">
+        
+        <!-- Sidebar: Configuration (3 cols) -->
+        <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full overflow-y-auto custom-scrollbar">
+            <h2 class="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <span class="size-6 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs shadow-sm">1</span>
+                质检配置
+            </h2>
+            
+            <div class="space-y-6 flex-1">
+                <!-- File Input -->
+                <div x-data="{ isDragging: false }">
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">待质检文件</label>
+                    
+                    <!-- Upload Area -->
+                    <div class="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-orange-500 hover:bg-orange-50/30 transition-all cursor-pointer group mb-3"
+                         :class="{'border-orange-500 bg-orange-50/30': isDragging}"
+                         @dragover.prevent="isDragging = true"
+                         @dragleave.prevent="isDragging = false"
+                         @drop.prevent="isDragging = false; handleFileDrop($event)"
+                         @click="$refs.fileInput.click()">
+                         
+                        <input type="file" x-ref="fileInput" class="hidden" accept=".jsonl,.json" @change="handleFileSelect">
+                        
+                        <div class="size-8 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-300">
+                            <span class="material-symbols-outlined text-[18px]">upload_file</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-700">点击上传文件</p>
+                    </div>
+
+                    <div class="flex flex-col space-y-2">
+                        <input type="text" x-model="inputFile" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-xs font-mono text-slate-600 truncate" placeholder="或输入文件名...">
+                        <button @click="loadLastOutput" class="text-xs text-orange-600 hover:text-orange-700 text-left font-bold flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[12px]">history</span> 使用上次推理结果
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Inspection Type -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">质检模式</label>
+                    <div class="flex space-x-1 bg-slate-100 p-1 rounded-lg">
+                        <button @click="type = 'rule'" 
+                                class="flex-1 py-2 text-xs font-bold rounded-md transition-all duration-200"
+                                :class="type === 'rule' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-500 hover:text-slate-700'">
+                            规则质检
+                        </button>
+                        <button @click="type = 'model'" 
+                                class="flex-1 py-2 text-xs font-bold rounded-md transition-all duration-200"
+                                :class="type === 'model' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-500 hover:text-slate-700'">
+                            模型打分
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rule Config -->
+                <div x-show="type === 'rule'" class="space-y-3 pt-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">启用的规则</p>
+                    <div class="space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                        <template x-for="rule in availableRules" :key="rule.key">
+                            <label class="flex items-start space-x-2 cursor-pointer hover:bg-slate-50 p-2 rounded-lg transition-colors group">
+                                <input type="checkbox" :value="rule.key" x-model="selectedRules" class="mt-0.5 rounded text-orange-600 focus:ring-orange-500 border-slate-300">
+                                <span class="text-xs text-slate-600 font-medium group-hover:text-slate-900 transition-colors" x-text="rule.label"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Model Config -->
+                <div x-show="type === 'model'" class="space-y-4 pt-2">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">模型配置</p>
+                    <input type="password" x-model="apiKey" placeholder="API Key" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-xs">
+                    <input type="text" x-model="modelName" placeholder="Model Name (e.g. gpt-4)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-xs">
+                </div>
+            </div>
+
+            <div class="pt-6 mt-auto border-t border-slate-100">
+                 <template x-if="status.status !== 'running'">
+                    <button @click="startInspection" 
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-orange-200 flex items-center justify-center gap-2 transform active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-[20px]">play_circle</span>
+                        开始质检
+                    </button>
+                 </template>
+                 <template x-if="status.status === 'running'">
+                    <button @click="stopInspection" 
+                            class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-red-200 flex items-center justify-center gap-2 transform active:scale-[0.98]">
+                        <span class="material-symbols-outlined text-[20px]">stop</span>
+                        停止质检
+                    </button>
+                 </template>
+            </div>
+        </div>
+
+        <!-- Main: Results & Charts (9 cols) -->
+        <div class="lg:col-span-9 flex flex-col space-y-6 h-full min-h-0">
+            
+            <!-- Status Bar -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between flex-none">
+                <div class="flex items-center space-x-6">
+                     <div>
+                         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">当前状态</div>
+                         <div class="flex items-center gap-2">
+                             <span class="size-2.5 rounded-full"
+                                  :class="{
+                                      'bg-slate-300': status.status === 'idle',
+                                      'bg-orange-500 animate-pulse': status.status === 'running',
+                                      'bg-green-500': status.status === 'completed',
+                                      'bg-red-500': status.status === 'error'
+                                  }"></span>
+                             <span class="text-sm font-bold text-slate-800 capitalize" x-text="status.status"></span>
+                         </div>
+                     </div>
+                </div>
+                
+                <div class="flex-1 mx-12">
+                    <div class="flex justify-between text-xs font-medium text-slate-500 mb-1">
+                        <span>Progress</span>
+                        <span x-text="Math.round((status.processed / (status.total || 1)) * 100) + '%'"></span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div class="bg-orange-500 h-full transition-all duration-500"
+                             :style="`width: ${progress}%`"></div>
+                    </div>
+                </div>
+                
+                 <button @click="fetchResults(1)" class="flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition-colors">
+                     <span class="material-symbols-outlined text-[16px]">refresh</span>
+                     刷新结果
+                 </button>
+            </div>
+
+            <!-- Dashboard / Results -->
+            <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden min-h-0">
+                 <!-- Results Header -->
+                 <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 flex-none">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-slate-400">analytics</span>
+                        质检结果详情
+                    </h3>
+                    <div class="flex space-x-2">
+                        <span class="text-xs font-medium text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 shadow-sm" x-show="results.length > 0">
+                            <span x-text="(pagination.page - 1) * pagination.per_page + 1"></span> - 
+                            <span x-text="Math.min(pagination.page * pagination.per_page, pagination.total)"></span> 
+                            / <span x-text="pagination.total"></span>
+                        </span>
+                    </div>
+                 </div>
+                 
+                 <!-- Empty State -->
+                 <template x-if="results.length === 0">
+                    <div class="flex-1 flex items-center justify-center p-10">
+                         <div class="text-center">
+                            <div class="inline-flex p-4 rounded-full bg-slate-50 text-slate-300 mb-4">
+                                <span class="material-symbols-outlined text-[48px]">assignment_add</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-900">暂无数据</h3>
+                            <p class="text-xs text-slate-500 mt-1">请在左侧配置并启动质检任务</p>
+                         </div>
+                    </div>
+                 </template>
+
+                 <!-- Results Table -->
+                 <template x-if="results.length > 0">
+                     <div class="flex-1 overflow-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 font-bold text-xs sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-6 py-3 w-20">ID</th>
+                                    <th class="px-6 py-3 w-32">评分/结果</th>
+                                    <th class="px-6 py-3">Instruction</th>
+                                    <th class="px-6 py-3 w-1/3">Output Preview</th>
+                                    <th class="px-6 py-3 w-24 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="(item, idx) in results" :key="idx">
+                                    <tr class="hover:bg-orange-50/30 transition-colors group">
+                                        <td class="px-6 py-4 font-mono text-xs text-slate-500" x-text="(pagination.page - 1) * pagination.per_page + idx + 1"></td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center">
+                                                <span class="text-lg font-black mr-2" 
+                                                      :class="getScoreColor(item.score)">
+                                                    <span x-text="item.score"></span>
+                                                </span>
+                                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Score</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="line-clamp-2 text-slate-700 text-xs font-medium max-w-xs" x-text="item.instruction"></div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="line-clamp-2 text-slate-500 font-mono text-[10px] bg-slate-50 p-1.5 rounded border border-slate-100" x-text="item.output"></div>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <button @click="showDetail(item)" class="text-orange-600 hover:text-orange-700 text-xs font-bold border border-orange-200 hover:border-orange-300 px-3 py-1.5 rounded-lg transition-colors bg-white">
+                                                查看
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                     </div>
+                 </template>
+                 
+                 <!-- Pagination -->
+                 <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center flex-none" x-show="results.length > 0">
+                     <button @click="fetchResults(pagination.page - 1)" 
+                             :disabled="pagination.page <= 1"
+                             class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors shadow-sm">
+                         <span class="material-symbols-outlined text-[14px]">chevron_left</span> 上一页
+                     </button>
+                     <span class="text-xs font-medium text-slate-500">
+                         Page <span class="font-bold text-slate-800" x-text="pagination.page"></span> of <span class="font-bold text-slate-800" x-text="pagination.total_pages"></span>
+                     </span>
+                     <button @click="fetchResults(pagination.page + 1)" 
+                             :disabled="pagination.page >= pagination.total_pages"
+                             class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-colors shadow-sm">
+                         下一页 <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                     </button>
+                 </div>
+            </div>
+        </div>
+        
+        <!-- Detail Modal -->
+        <div x-show="detailModalOpen" 
+             class="fixed inset-0 z-50 overflow-y-auto" 
+             style="display: none;"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="detailModalOpen = false"></div>
+            
+            <div class="relative min-h-screen flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-0 overflow-hidden flex flex-col max-h-[85vh]">
+                    <div class="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-orange-500">rate_review</span>
+                            样本详情
+                        </h3>
+                        <button @click="detailModalOpen = false" class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar" x-data="{ currentItem: selectedItem }">
+                        <template x-if="currentItem">
+                            <div>
+                                <!-- Score Banner -->
+                                <div class="flex items-center justify-between bg-gradient-to-r from-slate-50 to-white p-6 rounded-2xl border border-slate-100 mb-6 shadow-sm">
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">最终得分</div>
+                                        <div class="text-4xl font-black" :class="getScoreColor(currentItem.score)" x-text="currentItem.score"></div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">质检类型</div>
+                                        <div class="font-bold text-slate-800 bg-white px-3 py-1 rounded-lg border border-slate-200 shadow-sm inline-block" x-text="currentItem.inspection_type === 'rule_based' ? '规则质检' : '模型打分'"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Content -->
+                                <div class="space-y-6">
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[16px]">integration_instructions</span> Instruction
+                                        </h4>
+                                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-inner" x-text="currentItem.instruction"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[16px]">input</span> Input
+                                        </h4>
+                                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-inner" x-text="currentItem.input"></div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[16px]">output</span> Output
+                                        </h4>
+                                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap shadow-inner font-mono" x-text="currentItem.output"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Details -->
+                                <div class="mt-8 border-t border-slate-100 pt-6">
+                                    <h4 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-orange-500 text-[18px]">fact_check</span>
+                                        评分详情/原因
+                                    </h4>
+                                    <template x-if="currentItem.inspection_type === 'rule_based'">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <template x-for="(val, key) in currentItem.rule_details" :key="key">
+                                                <div class="flex justify-between items-center p-3 rounded-xl border transition-colors" 
+                                                     :class="val === true ? 'bg-green-50 border-green-100' : (val === false ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100')">
+                                                    <span class="text-xs font-mono font-medium text-slate-600" x-text="key"></span>
+                                                    <div class="flex items-center gap-1">
+                                                        <span class="material-symbols-outlined text-[16px]" 
+                                                              :class="val === true ? 'text-green-500' : (val === false ? 'text-red-500' : 'text-slate-400')"
+                                                              x-text="val === true ? 'check_circle' : (val === false ? 'cancel' : 'help')"></span>
+                                                        <span class="text-xs font-bold uppercase" 
+                                                              :class="val === true ? 'text-green-700' : (val === false ? 'text-red-700' : 'text-slate-500')"
+                                                              x-text="val === true ? 'PASS' : (val === false ? 'FAIL' : 'N/A')"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <template x-if="currentItem.inspection_type === 'model_based'">
+                                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-900 leading-relaxed shadow-sm flex gap-3">
+                                            <span class="material-symbols-outlined text-blue-500 shrink-0">psychology</span>
+                                            <span x-text="currentItem.model_reason || '无详细评价'"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="currentItem.error">
+                                        <div class="bg-red-50 p-4 rounded-xl border border-red-100 text-sm text-red-900 mt-4 flex gap-3">
+                                            <span class="material-symbols-outlined text-red-500 shrink-0">error</span>
+                                            <div>
+                                                <div class="font-bold">Error Occurred</div>
+                                                <div x-text="currentItem.error"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function inspectorApp() {
+        return {
+            inputFile: '',
+            type: 'rule',
+            apiKey: '',
+            modelName: 'deepseek-chat',
+            
+            // Rules
+            availableRules: [
+                { key: 'fk_answer_exist', label: '回答是否存在' },
+                { key: 'is_number', label: '数字格式检查' },
+                { key: 'no_text_truncated', label: '无截断文本' },
+                { key: 'no_repeat_content', label: '无重复内容' },
+                { key: 'fk_answer_yes_or_no', label: '是否回答Yes/No' },
+                { key: 'fk_answer_equal', label: '回答与GT一致' },
+                { key: 'no_chinese_english_mix', label: '无中英混杂' }
+            ],
+            selectedRules: ['fk_answer_exist', 'fk_answer_yes_or_no', 'fk_answer_equal'],
+            
+            status: { status: 'idle', processed: 0, total: 0 },
+            eventSource: null,
+            
+            // Results & Pagination
+            results: [],
+            pagination: { page: 1, per_page: 20, total: 0, total_pages: 0 },
+            
+            // Detail Modal
+            detailModalOpen: false,
+            selectedItem: null,
+
+            get progress() {
+                if (!this.status.total) return 0;
+                return Math.min(100, Math.round((this.status.processed / this.status.total) * 100));
+            },
+
+            init() {
+                this.loadLastOutput();
+                this.connectStream();
+            },
+            
+            async handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (file) await this.uploadFile(file);
+            },
+
+            async handleFileDrop(e) {
+                const file = e.dataTransfer.files[0];
+                if (file) await this.uploadFile(file);
+            },
+
+            async uploadFile(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Add a temporary notification or log if possible, but we don't have addLog here.
+                // We can use the global notification event.
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: '正在上传文件...' } }));
+                
+                try {
+                    const res = await fetch('/api/inspector/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    
+                    if (data.status === 'success') {
+                        this.inputFile = data.filename;
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: `文件上传成功: ${data.filename}` } }));
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (e) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: `上传失败: ${e.message}`, type: 'error' } }));
+                }
+            },
+            
+            loadLastOutput() {
+                const last = localStorage.getItem('last_inference_output');
+                if (last) {
+                    this.inputFile = last;
+                    // Try to guess the output filename to load results automatically?
+                    // Better wait for user or explicit action.
+                }
+            },
+
+            connectStream() {
+                if (this.eventSource) this.eventSource.close();
+                this.eventSource = new EventSource('/api/inspector/status');
+                this.eventSource.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    this.status = data;
+                    
+                    if (data.status === 'completed' && this.status.status !== 'completed') {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '质检完成，正在刷新结果...' } }));
+                        this.fetchResults(1); // Auto refresh when done
+                    }
+                };
+            },
+
+            async startInspection() {
+                if (!this.inputFile) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: '请选择输入文件', type: 'error' } }));
+                    return;
+                }
+
+                try {
+                    const payload = {
+                        input_file: this.inputFile,
+                        type: this.type,
+                        enabled_rules: this.selectedRules
+                    };
+                    
+                    if (this.type === 'model') {
+                        payload.api_key = this.apiKey;
+                        payload.model = this.modelName;
+                    }
+
+                    const res = await fetch('/api/inspector/run', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    
+                    if (data.status === 'success') {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '质检任务已启动' } }));
+                        // Store the output file to fetch results later
+                        this.currentOutputFile = data.output_file;
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (e) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message, type: 'error' } }));
+                }
+            },
+
+            async stopInspection() {
+                try {
+                    await fetch('/api/inspector/stop', { method: 'POST' });
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+            
+            async fetchResults(page = 1) {
+                // If we know the output file from current run, use it. 
+                // Otherwise try to guess from input file + type (same logic as backend)
+                // For simplicity, let's ask backend what the output file is, OR just try to construct it.
+                // The backend endpoint takes 'file_path'. 
+                
+                let targetFile = this.currentOutputFile;
+                if (!targetFile && this.inputFile) {
+                    // Try to construct standard name
+                    const base = this.inputFile.replace('.jsonl', '');
+                    // We need to know if path is absolute or relative, but backend handles relative to RESULTS
+                    // Let's try sending just the filename if it's in results
+                    const filename = this.inputFile.split('/').pop().replace('.jsonl', '');
+                    targetFile = `${filename}_${this.type}_inspected.jsonl`;
+                }
+                
+                if (!targetFile) return;
+
+                try {
+                    const res = await fetch(`/api/inspector/results?file_path=${encodeURIComponent(targetFile)}&page=${page}`);
+                    const data = await res.json();
+                    
+                    if (data.status === 'success') {
+                        this.results = data.data;
+                        this.pagination = data.pagination;
+                        this.currentOutputFile = targetFile; // Confirm this file works
+                    } else {
+                        // Silent fail or notify?
+                        console.log("Fetch results failed:", data.message);
+                        if (page === 1) this.results = []; 
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            },
+            
+            getScoreColor(score) {
+                if (score >= 8) return 'text-green-600';
+                if (score >= 6) return 'text-yellow-600';
+                return 'text-red-600';
+            },
+            
+            showDetail(item) {
+                this.selectedItem = item;
+                this.detailModalOpen = true;
+            }
+        }
+    }
+</script>
+{% endblock %}
