@@ -241,7 +241,7 @@
                 formData.append('file', file);
                 
                 try {
-                    const res = await fetch('{{ url_for("data_tool.upload_train") }}', {
+                    const res = await fetch('{{ url_for("data_tool.upload_full") }}', {
                         method: 'POST',
                         body: formData
                     });

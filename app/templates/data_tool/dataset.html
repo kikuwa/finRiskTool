@@ -5,7 +5,7 @@
 {% block header %}
 <div class="flex items-center gap-4 w-full">
     <h2 class="text-[11px] font-semibold text-slate-500 flex items-center gap-2">
-    <span>数据处理</span>
+    <span>数据管理</span>
     <span class="text-slate-700">/</span>
     <span class="text-slate-500 uppercase tracking-wider">数据集管理</span>
     </h2>
@@ -19,47 +19,110 @@
             <h1 class="text-2xl font-bold text-slate-900 tracking-tight">数据集管理</h1>
             <p class="text-slate-500 text-sm mt-1">管理模型训练所需的原始数据与中间结果</p>
         </div>
-        <button class="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
+        <button @click="resetState" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2">
             <span class="material-symbols-outlined text-[18px]">refresh</span>
             刷新状态
         </button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- 训练集文件上传 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- 全量数据集上传 -->
         <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
             <div class="flex items-center gap-4 mb-6">
                 <div class="size-12 rounded-2xl bg-blue-50 flex items-center justify-center text-primary border border-blue-100">
-                    <span class="material-symbols-outlined text-[24px]">upload_file</span>
+                    <span class="material-symbols-outlined text-[24px]">dataset</span>
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900">训练集文件</h3>
-                    <p class="text-slate-500 text-xs">包含特征和标签的CSV文件 (train.csv)</p>
-                </div>
-                <div class="ml-auto">
-                    <span class="px-2 py-1 rounded-md bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">Required</span>
+                    <h3 class="text-lg font-bold text-slate-900">全量数据集</h3>
+                    <p class="text-slate-500 text-xs">包含所有样本的CSV文件 (full.csv)</p>
                 </div>
             </div>
             
             <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-primary/50 hover:bg-blue-50/30 transition-all cursor-pointer group relative"
                  @dragover.prevent="$el.classList.add('border-primary', 'bg-blue-50/30')"
                  @dragleave.prevent="$el.classList.remove('border-primary', 'bg-blue-50/30')"
+                 @drop.prevent="handleDrop($event, 'full')">
+                
+                <input type="file" x-ref="fullInput" accept=".csv" class="hidden" @change="handleFileSelect($event, 'full')">
+                
+                <div x-show="!uploading.full">
+                    <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block group-hover:text-primary/70 transition-colors">cloud_upload</span>
+                    <p class="text-slate-600 font-medium mb-1">点击或拖拽上传</p>
+                    <p class="text-slate-400 text-xs mb-4">支持 CSV 格式，最大 500MB</p>
+                    <button @click="$refs.fullInput.click()" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
+                        选择文件
+                    </button>
+                </div>
+                
+                <div x-show="uploading.full" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl z-10">
+                    <div class="size-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-3"></div>
+                    <p class="text-primary font-bold text-sm">正在上传...</p>
+                </div>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="material-symbols-outlined text-slate-400 text-[18px]">description</span>
+                    <span class="text-xs text-slate-600 font-mono truncate" x-text="files.full || '未上传文件'"></span>
+                </div>
+                <span class="text-[10px] font-bold uppercase" :class="files.full ? 'text-green-600' : 'text-slate-400'" x-text="files.full ? 'Ready' : 'Empty'"></span>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-xs font-medium text-slate-700 mb-1">标签列名</label>
+                <input type="text" x-model="labelCol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="默认为 label">
+            </div>
+
+            <!-- 分割按钮 -->
+            <div class="mt-4 space-y-3" x-show="files.full">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">测试集比例</label>
+                    <select x-model="testSize" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                        <option value="0.1">10%</option>
+                        <option value="0.2">20%</option>
+                        <option value="0.3">30%</option>
+                        <option value="0.4">40%</option>
+                        <option value="0.5">50%</option>
+                    </select>
+                </div>
+                <button @click="splitDataset" :disabled="splitting" class="w-full px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]" :class="{'animate-spin': splitting}">call_split</span>
+                    <span x-text="splitting ? '正在分割...' : '分割为训练集/测试集'"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 训练集上传 -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="size-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600 border border-green-100">
+                    <span class="material-symbols-outlined text-[24px]">school</span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">训练集</h3>
+                    <p class="text-slate-500 text-xs">用于模型训练的数据 (train.csv)</p>
+                </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-green-500/50 hover:bg-green-50/30 transition-all cursor-pointer group relative"
+                 @dragover.prevent="$el.classList.add('border-green-500', 'bg-green-50/30')"
+                 @dragleave.prevent="$el.classList.remove('border-green-500', 'bg-green-50/30')"
                  @drop.prevent="handleDrop($event, 'train')">
                 
                 <input type="file" x-ref="trainInput" accept=".csv" class="hidden" @change="handleFileSelect($event, 'train')">
                 
                 <div x-show="!uploading.train">
-                    <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block group-hover:text-primary/70 transition-colors">cloud_upload</span>
+                    <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block group-hover:text-green-500/70 transition-colors">cloud_upload</span>
                     <p class="text-slate-600 font-medium mb-1">点击或拖拽上传</p>
-                    <p class="text-slate-400 text-xs mb-4">支持 CSV 格式，最大 500MB</p>
-                    <button @click="$refs.trainInput.click()" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200">
+                    <p class="text-slate-400 text-xs mb-4">支持 CSV 格式</p>
+                    <button @click="$refs.trainInput.click()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-green-500 hover:text-green-600 text-sm font-bold rounded-lg transition-all">
                         选择文件
                     </button>
                 </div>
                 
                 <div x-show="uploading.train" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl z-10">
-                    <div class="size-10 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-3"></div>
-                    <p class="text-primary font-bold text-sm">正在上传...</p>
+                    <div class="size-10 border-4 border-slate-200 border-t-green-500 rounded-full animate-spin mb-3"></div>
+                    <p class="text-green-600 font-bold text-sm">正在上传...</p>
                 </div>
             </div>
             
@@ -70,40 +133,42 @@
                 </div>
                 <span class="text-[10px] font-bold uppercase" :class="files.train ? 'text-green-600' : 'text-slate-400'" x-text="files.train ? 'Ready' : 'Empty'"></span>
             </div>
+            
+            <div class="mt-4">
+                <label class="block text-xs font-medium text-slate-700 mb-1">标签列名</label>
+                <input type="text" x-model="labelCol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="默认为 label">
+            </div>
         </div>
 
-        <!-- PU打分文件上传 -->
+        <!-- 测试集上传 -->
         <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
             <div class="flex items-center gap-4 mb-6">
                 <div class="size-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100">
-                    <span class="material-symbols-outlined text-[24px]">analytics</span>
+                    <span class="material-symbols-outlined text-[24px]">science</span>
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900">PU预测结果</h3>
-                    <p class="text-slate-500 text-xs">PU Bagging模型生成的预测文件</p>
-                </div>
-                <div class="ml-auto">
-                    <span class="px-2 py-1 rounded-md bg-slate-100 text-[10px] font-bold text-slate-500 uppercase">Optional</span>
+                    <h3 class="text-lg font-bold text-slate-900">测试集</h3>
+                    <p class="text-slate-500 text-xs">用于模型评估的数据 (test.csv)</p>
                 </div>
             </div>
             
             <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-purple-500/50 hover:bg-purple-50/30 transition-all cursor-pointer group relative"
                  @dragover.prevent="$el.classList.add('border-purple-500', 'bg-purple-50/30')"
                  @dragleave.prevent="$el.classList.remove('border-purple-500', 'bg-purple-50/30')"
-                 @drop.prevent="handleDrop($event, 'pu')">
-                 
-                <input type="file" x-ref="puInput" accept=".csv" class="hidden" @change="handleFileSelect($event, 'pu')">
+                 @drop.prevent="handleDrop($event, 'test')">
                 
-                <div x-show="!uploading.pu">
+                <input type="file" x-ref="testInput" accept=".csv" class="hidden" @change="handleFileSelect($event, 'test')">
+                
+                <div x-show="!uploading.test">
                     <span class="material-symbols-outlined text-[48px] text-slate-300 mb-4 block group-hover:text-purple-500/70 transition-colors">cloud_upload</span>
                     <p class="text-slate-600 font-medium mb-1">点击或拖拽上传</p>
-                    <p class="text-slate-400 text-xs mb-4">通常由PU Learning模块生成</p>
-                    <button @click="$refs.puInput.click()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-purple-500 hover:text-purple-600 text-sm font-bold rounded-lg transition-all">
+                    <p class="text-slate-400 text-xs mb-4">支持 CSV 格式</p>
+                    <button @click="$refs.testInput.click()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:border-purple-500 hover:text-purple-600 text-sm font-bold rounded-lg transition-all">
                         选择文件
                     </button>
                 </div>
                 
-                <div x-show="uploading.pu" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl z-10">
+                <div x-show="uploading.test" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl z-10">
                     <div class="size-10 border-4 border-slate-200 border-t-purple-500 rounded-full animate-spin mb-3"></div>
                     <p class="text-purple-600 font-bold text-sm">正在上传...</p>
                 </div>
@@ -112,22 +177,110 @@
             <div class="mt-4 flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                 <div class="flex items-center gap-2 overflow-hidden">
                     <span class="material-symbols-outlined text-slate-400 text-[18px]">description</span>
-                    <span class="text-xs text-slate-600 font-mono truncate" x-text="files.pu || '未上传文件'"></span>
+                    <span class="text-xs text-slate-600 font-mono truncate" x-text="files.test || '未上传文件'"></span>
                 </div>
-                <span class="text-[10px] font-bold uppercase" :class="files.pu ? 'text-green-600' : 'text-slate-400'" x-text="files.pu ? 'Ready' : 'Empty'"></span>
+                <span class="text-[10px] font-bold uppercase" :class="files.test ? 'text-green-600' : 'text-slate-400'" x-text="files.test ? 'Ready' : 'Empty'"></span>
+            </div>
+            
+            <div class="mt-4">
+                <label class="block text-xs font-medium text-slate-700 mb-1">标签列名</label>
+                <input type="text" x-model="labelCol" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="默认为 label">
             </div>
         </div>
     </div>
     
-    <!-- Data Preview (Placeholder) -->
+    <!-- Analysis Result -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" x-show="analysisResult" style="display: none;">
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <h3 class="font-bold text-slate-800 text-sm">数据集统计分析</h3>
+            <button @click="downloadReport" class="text-xs font-bold text-primary hover:text-blue-700 flex items-center gap-1 transition-colors">
+                <span class="material-symbols-outlined text-[16px]">download</span>
+                下载分析报告
+            </button>
+        </div>
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">样本总数</div>
+                <div class="text-2xl font-black text-slate-800" x-text="analysisResult?.sample_count"></div>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">特征数量</div>
+                <div class="text-2xl font-black text-slate-800" x-text="analysisResult?.feature_count"></div>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">缺失特征数</div>
+                <div class="text-2xl font-black text-slate-800" x-text="analysisResult?.missing_features_count"></div>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">正负样本比</div>
+                <div class="text-sm font-medium text-slate-600">
+                    <template x-for="(ratio, label) in analysisResult?.label_ratio" :key="label">
+                        <div class="flex justify-between">
+                            <span x-text="label"></span>
+                            <span x-text="ratio"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Top Missing -->
+            <div class="border border-slate-100 rounded-xl p-4">
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">缺失值 Top 5</h4>
+                <div class="space-y-2">
+                    <template x-for="(count, feature) in analysisResult?.top_missing_features" :key="feature">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600 font-mono" x-text="feature"></span>
+                            <span class="text-slate-400" x-text="count"></span>
+                        </div>
+                    </template>
+                    <div x-show="Object.keys(analysisResult?.top_missing_features || {}).length === 0" class="text-xs text-slate-400 italic">无缺失值</div>
+                </div>
+            </div>
+            <!-- Top Outliers -->
+            <div class="border border-slate-100 rounded-xl p-4">
+                <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">异常值 Top 5 (IQR分析)</h4>
+                <div class="space-y-2">
+                    <template x-for="(count, feature) in analysisResult?.top_outlier_features" :key="feature">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600 font-mono" x-text="feature"></span>
+                            <span class="text-slate-400" x-text="count"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Preview -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 class="font-bold text-slate-800 text-sm">数据预览</h3>
             <span class="text-xs text-slate-400">仅展示前 5 行</span>
         </div>
-        <div class="p-8 text-center text-slate-500 text-sm">
+        <div class="p-8 text-center text-slate-500 text-sm" x-show="!previewData.length">
             <span class="material-symbols-outlined text-3xl mb-2 text-slate-300 block">table_view</span>
             暂无预览数据，请先上传文件
+        </div>
+        <div class="overflow-x-auto" x-show="previewData.length" style="display: none;">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                    <tr>
+                        <template x-for="col in previewColumns" :key="col">
+                            <th class="px-4 py-3 whitespace-nowrap font-bold" x-text="col"></th>
+                        </template>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <template x-for="(row, index) in previewData" :key="index">
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <template x-for="col in previewColumns" :key="col">
+                                <td class="px-4 py-3 text-slate-600 whitespace-nowrap" x-text="row[col]"></td>
+                            </template>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -138,13 +291,21 @@
     function datasetApp() {
         return {
             uploading: {
+                full: false,
                 train: false,
-                pu: false
+                test: false
             },
+            splitting: false,
             files: {
-                train: 'data/train.csv', // Default assumption
-                pu: ''
+                full: '',
+                train: '',
+                test: ''
             },
+            labelCol: 'label',
+            testSize: '0.3',
+            previewData: [],
+            previewColumns: [],
+            analysisResult: null,
             
             handleFileSelect(event, type) {
                 const file = event.target.files[0];
@@ -152,7 +313,7 @@
             },
             
             handleDrop(event, type) {
-                this.$el.classList.remove('border-primary', 'bg-blue-50/30', 'border-purple-500', 'bg-purple-50/30');
+                this.$el.classList.remove('border-primary', 'bg-blue-50/30', 'border-green-500', 'bg-green-50/30', 'border-purple-500', 'bg-purple-50/30');
                 const file = event.dataTransfer.files[0];
                 if (file) this.uploadFile(file, type);
             },
@@ -166,8 +327,13 @@
                 this.uploading[type] = true;
                 const formData = new FormData();
                 formData.append('file', file);
+                formData.append('label_col', this.labelCol);
                 
-                const endpoint = type === 'train' ? '/data_tool/upload_train' : '/data_tool/upload_pu';
+                // 根据类型选择不同的上传接口
+                let endpoint = '';
+                if (type === 'full') endpoint = '{{ url_for("data_tool.upload_full") }}';
+                else if (type === 'train') endpoint = '{{ url_for("data_tool.upload_train") }}';
+                else if (type === 'test') endpoint = '{{ url_for("data_tool.upload_test") }}';
                 
                 try {
                     const res = await fetch(endpoint, {
@@ -178,6 +344,13 @@
                     
                     if (data.success) {
                         this.files[type] = file.name;
+                        if (data.preview && data.preview.length > 0) {
+                            this.previewData = data.preview;
+                            this.previewColumns = data.columns || Object.keys(data.preview[0]);
+                        }
+                        if (data.analysis) {
+                            this.analysisResult = data.analysis;
+                        }
                         window.dispatchEvent(new CustomEvent('notify', { detail: { message: '文件上传成功', type: 'success' } }));
                     } else {
                         throw new Error(data.error);
@@ -187,6 +360,95 @@
                 } finally {
                     this.uploading[type] = false;
                 }
+            },
+
+            async splitDataset() {
+                if (!this.files.full) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: '请先上传全量数据集', type: 'warning' } }));
+                    return;
+                }
+
+                this.splitting = true;
+                this.analysisResult = null;
+                
+                try {
+                    const res = await fetch('{{ url_for("data_tool.split_dataset") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            label_col: this.labelCol || 'label',
+                            test_size: parseFloat(this.testSize)
+                        })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        this.files.train = 'train_dataset.csv';
+                        this.files.test = 'test_dataset.csv';
+                        this.analysisResult = data.analysis;
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '数据集分割成功', type: 'success' } }));
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (e) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message || '分割失败', type: 'error' } }));
+                } finally {
+                    this.splitting = false;
+                }
+            },
+
+            async downloadReport() {
+                if (!this.analysisResult) return;
+                
+                try {
+                    const res = await fetch('{{ url_for("data_tool.download_analysis_report") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            analysis_result: this.analysisResult
+                        })
+                    });
+                    
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'dataset_analysis_report.json';
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+                    } else {
+                        throw new Error('下载失败');
+                    }
+                } catch (e) {
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message, type: 'error' } }));
+                }
+            },
+
+            resetState() {
+                this.files = {
+                    full: '',
+                    train: '',
+                    test: ''
+                };
+                this.previewData = [];
+                this.previewColumns = [];
+                this.analysisResult = null;
+                this.labelCol = 'label';
+                this.testSize = '0.3';
+                
+                // Reset file inputs
+                this.$refs.fullInput.value = '';
+                this.$refs.trainInput.value = '';
+                this.$refs.testInput.value = '';
+                
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: '状态已重置', type: 'info' } }));
             }
         }
     }

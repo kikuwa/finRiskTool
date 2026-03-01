@@ -66,6 +66,26 @@
     </div>
     <div class="space-y-8">
     <div class="flex items-center gap-3">
+        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">数据管理</span>
+        <div class="h-px flex-1 bg-slate-200/60"></div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a class="bg-white shadow-sm border border-slate-200 p-8 rounded-2xl card-hover group transition-all flex flex-col justify-between min-h-[220px]" href="{{ url_for('data_tool.dataset_management') }}">
+            <div>
+                <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary/20 transition-colors">
+                    <span class="material-symbols-outlined text-primary text-3xl">database</span>
+                </div>
+                <h5 class="text-lg font-bold text-slate-900 mb-2">数据集管理</h5>
+                <p class="text-sm text-slate-500 leading-relaxed">上传与管理训练数据及中间结果</p>
+            </div>
+            <div class="mt-6 flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider group-hover:translate-x-1 transition-transform">
+                <span>进入模块</span>
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="flex items-center gap-3">
         <span class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">特征工程模块</span>
         <div class="h-px flex-1 bg-slate-200/60"></div>
     </div>

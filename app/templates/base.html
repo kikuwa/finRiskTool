@@ -127,6 +127,13 @@
 <span class="text-sm font-medium">首页</span>
 </a>
 <div class="px-4 py-2 mt-2 mb-1">
+    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">数据管理</span>
+</div>
+<a class="{{ 'sidebar-item-active' if active_page == 'dataset' else 'sidebar-item' }}" href="{{ url_for('data_tool.dataset_management') }}">
+<span class="material-symbols-outlined text-[22px]">database</span>
+<span class="text-sm font-medium">数据集管理</span>
+</a>
+<div class="px-4 py-2 mt-2 mb-1">
     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">特征工程</span>
 </div>
 <a class="{{ 'sidebar-item-active' if active_page == 'data_engineering' else 'sidebar-item' }}" href="{{ url_for('data_tool.pu_bagging') }}">

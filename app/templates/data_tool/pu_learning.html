@@ -30,7 +30,7 @@
             </p>
         </div>
 
-        <div class="mt-8 flex items-center gap-4">
+        <div class="mt-8 flex flex-wrap items-center gap-4">
             <button @click="runModel" 
                     :disabled="loading"
                     class="px-8 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]">
@@ -38,21 +38,16 @@
                 <span x-text="loading ? '正在训练模型...' : '开始训练模型'"></span>
             </button>
             
-            <div class="relative">
-                <input type="file" x-ref="fileInput" accept=".csv" class="hidden" @change="handleFileSelect($event)">
-                <button @click="$refs.fileInput.click()" 
-                        :disabled="uploading"
-                        class="px-6 py-3 bg-white border border-slate-200 text-slate-600 text-sm font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2 disabled:opacity-70">
-                    <span class="material-symbols-outlined text-[20px]" :class="{'animate-bounce': uploading}">upload_file</span>
-                    <span x-text="uploading ? '正在上传...' : '上传训练数据'"></span>
-                </button>
+            <div class="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-500">标签列名:</span>
+                <input type="text" x-model="labelCol" 
+                       class="bg-transparent border-none text-sm font-mono text-slate-700 focus:ring-0 w-24 p-0" 
+                       placeholder="label">
             </div>
             
-            <div class="text-xs text-slate-500 font-medium" x-show="currentFile">
-                当前文件: <span class="font-bold text-slate-700" x-text="currentFile"></span>
-                <span class="text-green-500 ml-2 flex inline-flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[12px]">check_circle</span> Ready
-                </span>
+            <div class="text-xs text-slate-500 font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined text-[16px] text-slate-400">info</span>
+                <span>默认使用 <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">data/train.csv</code> 和 <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-700">data/test.csv</code></span>
             </div>
         </div>
     </div>
@@ -233,64 +228,10 @@
     function puLearningApp() {
         return {
             loading: false,
-            uploading: false,
-            currentFile: 'data/train.csv',
+            labelCol: 'label', // Default label column
             isLogExpanded: false,
             logs: [],
             results: null,
-
-            handleFileSelect(event) {
-                const file = event.target.files[0];
-                if (file) this.uploadFile(file);
-            },
-            
-            async uploadFile(file) {
-                if (!file) return;
-                
-                // Simple validation
-                if (!file.name.endsWith('.csv')) {
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: '只允许上传 CSV 文件', type: 'error' } }));
-                    return;
-                }
-                
-                this.uploading = true;
-                const formData = new FormData();
-                formData.append('file', file);
-                
-                try {
-                    console.log('Uploading file:', file.name);
-                    const res = await fetch('{{ url_for("data_tool.upload_train") }}', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!res.ok) {
-                        const text = await res.text();
-                        try {
-                            const data = JSON.parse(text);
-                            throw new Error(data.error || `Server error: ${res.status}`);
-                        } catch (e) {
-                            throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
-                        }
-                    }
-
-                    const data = await res.json();
-                    
-                    if (data.success) {
-                        this.currentFile = file.name;
-                        this.addLog(`文件 ${file.name} 上传成功`, 'success');
-                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: '文件上传成功', type: 'success' } }));
-                    } else {
-                        throw new Error(data.error);
-                    }
-                } catch (e) {
-                    console.error('Upload error:', e);
-                    this.addLog(`上传失败: ${e.message}`, 'error');
-                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: e.message || '上传失败', type: 'error' } }));
-                } finally {
-                    this.uploading = false;
-                }
-            },
 
             addLog(message, type = 'info') {
                 const time = new Date().toLocaleTimeString();
@@ -309,7 +250,14 @@
 
                 try {
                     const res = await fetch('{{ url_for("data_tool.run_model") }}', {
-                        method: 'POST'
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            dataset_type: 'split', // Always use split for now as we default to train/test files
+                            label_col: this.labelCol
+                        })
                     });
                     const data = await res.json();
 

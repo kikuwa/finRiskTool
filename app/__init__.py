@@ -1,31 +1,23 @@
-from flask import Flask
+from flask import Flask, jsonify
 import os
-import logging
-from logging.handlers import RotatingFileHandler
+import traceback
+from datetime import datetime
 
 def create_app():
     app = Flask(__name__)
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev')
-    app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max upload
+    app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max upload
     
     # Path Configuration
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     app.config['PROJECT_ROOT'] = project_root
-    app.config['DATA_FOLDER'] = os.path.join(project_root, 'data')
-    app.config['UPLOAD_FOLDER'] = os.path.join(project_root, 'data', 'uploads')
-    app.config['RESULTS_FOLDER'] = os.path.join(project_root, 'data', 'results')
     app.config['LOG_FOLDER'] = os.path.join(project_root, 'logs')
     
     # Ensure directories exist
-    for folder in [app.config['DATA_FOLDER'], app.config['UPLOAD_FOLDER'], 
-                   app.config['RESULTS_FOLDER'], app.config['LOG_FOLDER']]:
-        os.makedirs(folder, exist_ok=True)
+    os.makedirs(app.config['LOG_FOLDER'], exist_ok=True)
         
-    # Logging Configuration
-    setup_logging(app)
-    
     # Register Blueprints
     from app.routes.main import main_bp
     from app.routes.data_tool import data_tool_bp
@@ -40,20 +32,44 @@ def create_app():
     app.register_blueprint(inference_bp)
     app.register_blueprint(inspector_bp)
     app.register_blueprint(views_bp, url_prefix='/risk_cot')
+
+    # Register Global Error Handler
+    @app.errorhandler(Exception)
+    def handle_global_exception(e):
+        error_time = datetime.now()
+        error_type = type(e).__name__
+        error_message = str(e)
+        stack_trace = traceback.format_exc()
+        
+        # 1. 在控制台清晰打印
+        print("="*80)
+        print(f"CRITICAL ERROR at {error_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Type: {error_type}")
+        print(f"Message: {error_message}")
+        print(stack_trace)
+        print("="*80)
+        
+        # 2. 直接写入日志文件
+        log_file_path = os.path.join(app.config['LOG_FOLDER'], f"error_{error_time.strftime('%Y%m%d')}.log")
+        log_content = (
+            f"Timestamp: {error_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"Error Type: {error_type}\n"
+            f"Error Message: {error_message}\n"
+            f"Stack Trace:\n{stack_trace}\n"
+            f"{'-'*80}\n"
+        )
+        
+        try:
+            with open(log_file_path, 'a', encoding='utf-8') as f:
+                f.write(log_content)
+        except Exception as log_e:
+            print(f"FATAL: Failed to write to log file: {log_e}")
+
+        # 返回一个标准的 JSON 错误响应
+        response = {
+            'error': 'Internal Server Error',
+            'message': 'An unexpected error occurred. The incident has been logged.'
+        }
+        return jsonify(response), 500
     
     return app
-
-def setup_logging(app):
-    if not app.debug:
-        file_handler = RotatingFileHandler(
-            os.path.join(app.config['LOG_FOLDER'], 'app.log'),
-            maxBytes=1024 * 1024, 
-            backupCount=10
-        )
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
-        app.logger.info('Risk Control System startup')
