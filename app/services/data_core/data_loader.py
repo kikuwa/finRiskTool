@@ -56,7 +56,7 @@ class DataLoader:
 
     def _load_csv(self, file_path: str) -> pd.DataFrame:
         """
-        加载 CSV 文件，自动检测编码
+        加载 CSV 文件，自动检测编码并包含多种编码回退机制
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"文件未找到: {file_path}")
@@ -64,22 +64,41 @@ class DataLoader:
         if not file_path.lower().endswith('.csv'):
             raise ValueError("只允许上传 CSV 文件")
 
+        # 定义常见编码的尝试顺序，优先使用检测到的编码
+        detected_encoding = self._detect_encoding(file_path)
+        encodings_to_try = []
+        if detected_encoding:
+            encodings_to_try.append(detected_encoding)
+        
+        # 添加常见编码回退列表
+        common_encodings = [
+            'utf-8',
+            'gbk',
+            'gb18030',
+            'big5',
+            'latin-1',
+            'utf-16',
+            'cp1252'
+        ]
+        
+        # 合并列表，确保不重复
+        for enc in common_encodings:
+            if enc not in encodings_to_try:
+                encodings_to_try.append(enc)
+        
+        last_error = None
+        for encoding in encodings_to_try:
+            try:
+                return pd.read_csv(file_path, encoding=encoding, low_memory=False)
+            except (UnicodeDecodeError, LookupError) as e:
+                last_error = e
+                continue
+        
+        # 如果所有编码都失败，最后尝试使用 'utf-8' 并忽略或替换错误字符
         try:
-            # 自动检测编码
-            encoding = self._detect_encoding(file_path)
-            if encoding is None:
-                # 如果 chardet 无法确定，则按顺序尝试
-                try:
-                    return pd.read_csv(file_path, encoding='utf-8')
-                except UnicodeDecodeError:
-                    return pd.read_csv(file_path, encoding='gbk')
-            
-            return pd.read_csv(file_path, encoding=encoding)
-        except (UnicodeDecodeError, LookupError) as e:
-            # 如果自动检测的编码仍然失败，提供更详细的错误信息
-            raise ValueError(f"无法使用检测到的编码 '{encoding}' 读取文件。请确保文件是有效的 CSV 格式，并尝试转换为 UTF-8 编码。错误: {e}")
+            return pd.read_csv(file_path, encoding='utf-8', errors='replace', low_memory=False)
         except Exception as e:
-            raise ValueError(f"读取 CSV 文件时发生未知错误: {e}")
+            raise ValueError(f"无法读取文件。尝试了以下编码: {encodings_to_try}。错误: {last_error}")
 
     def validate_data(self, df: pd.DataFrame) -> None:
         """

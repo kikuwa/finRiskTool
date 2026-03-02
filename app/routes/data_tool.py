@@ -6,12 +6,60 @@ import sys
 import shutil
 import traceback
 import json
+import chardet
 from datetime import datetime
 from app.services.data_core.data_loader import DataLoader
 from app.services.data_core.PU_bagging import run_pu_learning_pipeline
 from app.services.data_core.ensemble_feature_selection import run_feature_selection_pipeline
 from app.services.data_core.split_data import split_data
 from app.services.data_core.data_analysis import analyze_dataset
+
+def _detect_encoding(file_path: str) -> str:
+    """
+    使用 chardet 检测文件编码
+    """
+    with open(file_path, 'rb') as f:
+        result = chardet.detect(f.read(100000))
+    return result['encoding']
+
+def _load_csv_robust(file_path: str) -> pd.DataFrame:
+    """
+    加载 CSV 文件，自动检测编码并包含多种编码回退机制
+    """
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"文件未找到: {file_path}")
+    
+    detected_encoding = _detect_encoding(file_path)
+    encodings_to_try = []
+    if detected_encoding:
+        encodings_to_try.append(detected_encoding)
+    
+    common_encodings = [
+        'utf-8',
+        'gbk',
+        'gb18030',
+        'big5',
+        'latin-1',
+        'utf-16',
+        'cp1252'
+    ]
+    
+    for enc in common_encodings:
+        if enc not in encodings_to_try:
+            encodings_to_try.append(enc)
+    
+    last_error = None
+    for encoding in encodings_to_try:
+        try:
+            return pd.read_csv(file_path, encoding=encoding, low_memory=False)
+        except (UnicodeDecodeError, LookupError) as e:
+            last_error = e
+            continue
+    
+    try:
+        return pd.read_csv(file_path, encoding='utf-8', errors='replace', low_memory=False)
+    except Exception as e:
+        raise ValueError(f"无法读取文件。尝试了以下编码: {encodings_to_try}。错误: {last_error}")
 
 data_tool_bp = Blueprint('data_tool', __name__)
 
@@ -208,7 +256,7 @@ def split_dataset():
         shutil.copy2(train_output, os.path.join(upload_dir, 'train_dataset.csv'))
         shutil.copy2(test_output, os.path.join(upload_dir, 'test_dataset.csv'))
         
-        df = pd.read_csv(full_path)
+        df = _load_csv_robust(full_path)
         analysis_result = analyze_dataset(df, label_col=label_col)
         
         return jsonify({
@@ -286,7 +334,7 @@ def run_model():
         )
         
         predictions_path = result['predictions_path']
-        df = pd.read_csv(predictions_path)
+        df = _load_csv_robust(predictions_path)
         
         top_10 = df.nlargest(10, 'prob')[['prob']]
         positive_samples = df[df[label_col] == 1]
@@ -299,7 +347,7 @@ def run_model():
         feature_importance_path = result['feature_importance_path']
         feature_importance = []
         if os.path.exists(feature_importance_path):
-            fi_df = pd.read_csv(feature_importance_path)
+            fi_df = _load_csv_robust(feature_importance_path)
             feature_importance = fi_df.head(20).to_dict('records')
 
         return jsonify({
@@ -386,7 +434,7 @@ def download_results():
 def get_full_results():
     results_path = os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'results', 'pu_learning', 'test_predictions.csv')
     if os.path.exists(results_path):
-        df = pd.read_csv(results_path)
+        df = _load_csv_robust(results_path)
         df_sample = df.head(100)
         df_sample = df_sample.fillna(value=np.nan)
         result_dict = df_sample.to_dict('records')
@@ -402,7 +450,7 @@ def get_full_results():
 def get_results_data():
     results_path = os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'results', 'feature_selection', 'feature_rank_comparison.csv')
     if os.path.exists(results_path):
-        df = pd.read_csv(results_path)
+        df = _load_csv_robust(results_path)
         df_sample = df.head(100)
         
         df_sample = df_sample.astype(object).where(pd.notnull(df_sample), None)
